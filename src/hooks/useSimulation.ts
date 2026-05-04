@@ -85,18 +85,15 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       const marketContango = calcMarketContango(currentVix, params.baseContango);
       const actualRollYield = marketContango * (-Math.sign(params.leverage));
 
-      // 傳統型
       if (tradNav > 0) {
         const tradReturn = (vixReturn * params.leverage) + actualRollYield;
-        if (tradReturn <= -1) {
-          tradNav = 0;
-        } else {
+        if (tradReturn <= -1) tradNav = 0;
+        else {
           tradNav = tradNav * (1 + tradReturn);
           if (tradNav < 0) tradNav = 0;
         }
       }
 
-      // 創新型
       if (innNav > 0) {
         let innReturn = 0;
         if (params.leverage < 0) {
@@ -137,9 +134,10 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
     let tradMaxDrawdown = 0;
     let innMaxDrawdown = 0;
 
-    // 黑天鵝前數據計算
-    let winCount = 0;
-    let diffSum = 0;
+    let innWinDays = 0;
+    let tradWinDays = 0;
+    let innDiffSum = 0;
+    let tradDiffSum = 0;
     const preSwanDays = params.blackSwanDay;
 
     data.forEach((d, i) => {
@@ -152,11 +150,14 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       const innDd = maxInnNav > 0 ? (maxInnNav - d.innNav) / maxInnNav : 0;
       if (innDd > innMaxDrawdown) innMaxDrawdown = innDd;
 
-      // 統計黑天鵝爆發前的情況 (i < blackSwanDay)
+      // 黑天鵝前統計
       if (i < params.blackSwanDay) {
-        if (d.innNav > d.tradNav) winCount++;
-        if (d.tradNav > 0) {
-          diffSum += (d.innNav - d.tradNav) / d.tradNav;
+        if (d.innNav > d.tradNav) {
+          innWinDays++;
+          if (d.tradNav > 0) innDiffSum += (d.innNav - d.tradNav) / d.tradNav;
+        } else if (d.tradNav > d.innNav) {
+          tradWinDays++;
+          if (d.innNav > 0) tradDiffSum += (d.tradNav - d.innNav) / d.innNav;
         }
       }
     });
@@ -168,8 +169,12 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       innMaxDrawdown,
       tradBankrupt: finalTradNav === 0,
       innBankrupt: finalInnNav === 0,
-      preSwanOutperformanceAvg: (diffSum / preSwanDays) * 100, // 平均領先 %
-      preSwanWinRatio: (winCount / preSwanDays) * 100,         // 勝率 %
+      // 創新領先指標 (用於 Leverage > 0)
+      preSwanInnWinRatio: (innWinDays / preSwanDays) * 100,
+      preSwanInnOutperformanceAvg: (innDiffSum / Math.max(1, innWinDays)) * 100,
+      // 傳統領先指標 (用於 Leverage < 0，展示保費代價)
+      preSwanTradWinRatio: (tradWinDays / preSwanDays) * 100,
+      preSwanTradOutperformanceAvg: (tradDiffSum / Math.max(1, tradWinDays)) * 100,
     };
   }, [data, params.blackSwanDay]);
 
