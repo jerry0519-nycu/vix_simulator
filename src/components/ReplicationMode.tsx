@@ -14,52 +14,63 @@ import {
   ReferenceLine
 } from "recharts";
 
-// 完全使用本頁自己的 local state，與全局 params 無關
 export function ReplicationMode() {
-  // ── 本頁專屬參數滑桿 ──
+  // ── 本頁專屬參數 ──
   const [baseVix, setBaseVix]       = useState(15);
-  const [strikePct, setStrikePct]   = useState(150);
-  const [premium, setPremium]       = useState(2);
-  const [multiplier, setMultiplier] = useState(0.8);
-  const leverage = -1.0; // 固定為 -1x 放空
+  const [leverage, setLeverage]     = useState(-1.0); // 可調整槓桿
+  
+  // 做空專屬參數
+  const [strikePctShort, setStrikePctShort] = useState(150);
+  const [premiumShort, setPremiumShort]     = useState(2);
+  const [multiplier, setMultiplier]         = useState(1.0);
 
-  // ── 線條顯示勾選 ──
-  const [showTrad,     setShowTrad]     = useState(true);
-  const [showCall,     setShowCall]     = useState(true);
-  const [showCombined, setShowCombined] = useState(true);
+  // 做多專屬參數
+  const [strikePctLong, setStrikePctLong]   = useState(130);
+  const [premiumLong, setPremiumLong]       = useState(5);
 
-  // ── 計算 Payoff 資料（只依賴本頁四個 state）──
+  const isShort = leverage < 0;
+  const isLong = leverage > 0;
+
+  // ── 計算 Payoff 資料 ──
   const payoffData = useMemo(() => {
     const data = [];
-    for (let x = 5; x <= 100; x += 1) {
-      const vixReturn    = (x - baseVix) / baseVix;
-      const tradReturn   = vixReturn * leverage * 100;                           // 傳統放空損益
-      const strikePrice  = baseVix * (strikePct / 100);
-      const callIntrinsic= Math.max(0, (x - strikePrice) / baseVix) * multiplier * 100;
-      const isolatedCall = callIntrinsic - premium;                              // 選擇權損益
-      const innReturn    = tradReturn + isolatedCall;                            // 組合損益
+    for (let x = 5; x <= 60; x += 1) {
+      const vixReturn = (x - baseVix) / baseVix;
+      const tradReturn = vixReturn * leverage * 100;
+      
+      let optionReturn = 0;
+      let innReturn = 0;
+
+      if (isShort) {
+        // 模組 A：買入 Call (保護)
+        const strikePrice = baseVix * (strikePctShort / 100);
+        const callIntrinsic = Math.max(0, (x - strikePrice) / baseVix) * multiplier * 100;
+        optionReturn = callIntrinsic - premiumShort;
+        innReturn = tradReturn + optionReturn;
+      } else if (isLong) {
+        // 模組 B：賣出 Call (Covered Call)
+        const strikePrice = baseVix * (strikePctLong / 100);
+        // 賣出權利金收益
+        const yieldIncome = premiumLong;
+        // 超過履約價的漲幅被讓渡 (封頂)
+        const cappedVixReturn = Math.min(vixReturn, (strikePrice - baseVix) / baseVix);
+        innReturn = (cappedVixReturn * leverage * 100) + yieldIncome;
+        optionReturn = innReturn - tradReturn;
+      } else {
+        innReturn = tradReturn;
+      }
+
       data.push({
-        vixPrice:     x,
-        tradReturn:   Number(tradReturn.toFixed(2)),
-        isolatedCall: Number(isolatedCall.toFixed(2)),
-        innReturn:    Number(innReturn.toFixed(2)),
+        vixPrice: x,
+        tradReturn: Number(tradReturn.toFixed(2)),
+        optionReturn: Number(optionReturn.toFixed(2)),
+        innReturn: Number(innReturn.toFixed(2)),
       });
     }
     return data;
-  }, [baseVix, strikePct, premium, multiplier]);
+  }, [baseVix, leverage, strikePctShort, premiumShort, multiplier, strikePctLong, premiumLong]);
 
-  // ── 共用的 slider 樣式 helper ──
-  const SliderRow = ({
-    label, value, unit, color,
-    min, max, step,
-    onChange,
-    hint,
-  }: {
-    label: string; value: number; unit: string; color: string;
-    min: number; max: number; step: number;
-    onChange: (v: number) => void;
-    hint?: string;
-  }) => (
+  const SliderRow = ({ label, value, unit, color, min, max, step, onChange, hint }: any) => (
     <div className="space-y-1.5">
       <div className="flex justify-between items-center text-sm">
         <span className="text-slate-400">{label}</span>
@@ -71,197 +82,138 @@ export function ReplicationMode() {
         className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-slate-800"
         style={{ accentColor: color.replace("text-", "") }}
       />
-      {hint && <p className="text-xs text-slate-600">{hint}</p>}
+      {hint && <p className="text-[11px] text-slate-600 leading-tight">{hint}</p>}
     </div>
   );
 
   return (
     <div className="flex flex-row gap-6 h-full min-h-0">
-
-      {/* ─── 左側面板 ─── */}
+      {/* 左側面板 */}
       <div className="flex flex-col gap-4 w-80 flex-shrink-0 h-full min-h-0 overflow-y-auto custom-scrollbar pr-1">
-
-        {/* 商品解構說明 */}
-        <GlassCard className="border-l-4 border-l-indigo-500">
-          <h3 className="text-xl font-light text-indigo-300 mb-3">
-            商品解構與複製
+        
+        {/* 動態解構說明 */}
+        <GlassCard className={`border-l-4 ${isShort ? 'border-l-indigo-500' : 'border-l-emerald-500'}`}>
+          <h3 className={`text-xl font-light mb-3 ${isShort ? 'text-indigo-300' : 'text-emerald-300'}`}>
+            {isShort ? "階梯式尾部防禦解構" : "掩護性買權補血解構"}
           </h3>
           <p className="text-slate-300 text-sm leading-relaxed font-light mb-4">
-            要創造出「反向 VIX ETN」，可以直接使用模組化合約來「組裝」：<br /><br />
-            <span className="text-red-400 font-medium">● 傳統 ETN</span> = 現金部位 + <strong className="text-red-300">放空 VIX 期貨</strong><br />
-            <span className="text-teal-400 font-medium">● 創新 ETN</span> = 現金部位 + 放空 VIX 期貨 + <strong className="text-teal-300">買入極度價外買權 (Deep OTM Call)</strong>
+            {isShort ? (
+              <>
+                針對<span className="text-red-400 font-medium font-mono">做空模式</span>：<br/>
+                利用轉倉收益買入 <strong>OTM Call</strong>。當 VIX 暴漲時，選擇權的 Gamma 爆發能完美抵銷期貨空單的無限損失。
+              </>
+            ) : (
+              <>
+                針對<span className="text-blue-400 font-medium font-mono">做多模式</span>：<br/>
+                <strong>賣出 OTM Call</strong> 收取權利金。這筆額外收入能有效緩解做多 VIX 時極為嚴重的轉倉耗損（正價差）。
+              </>
+            )}
           </p>
-          <div className="p-3 bg-black/40 rounded border border-indigo-500/20 text-xs text-slate-400">
-            價外選擇權可視為巨災保險，雖然平時繳保費使利潤微幅下滑；但當 VIX 暴漲突破履約價時，無限獲利可抵銷期貨的無限虧損。
+          <div className="p-3 bg-black/40 rounded border border-white/5 text-[12px] text-slate-400">
+            {isShort 
+              ? "價外買權 = 巨災保險。平時繳費使利潤微降；暴漲時無限獲利抵銷無限虧損。"
+              : "賣出買權 = 資產收租。平時收租補貼正價差耗損；大漲時利潤封頂於履約價。"
+            }
           </div>
         </GlassCard>
 
-        {/* 參數滑桿 */}
-        <GlassCard className="border-l-4 border-l-purple-500">
-          <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
-            參數調整
-          </h4>
+        {/* 核心參數 */}
+        <GlassCard className="border-l-4 border-l-blue-500">
+          <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">核心策略參數</h4>
           <div className="space-y-5">
             <SliderRow
-              label="基準 VIX (Initial VIX)"
+              label="槓桿倍數 (Leverage)"
+              value={leverage} unit="x" color="text-yellow-400"
+              min={-2} max={2} step={0.5}
+              onChange={setLeverage}
+            />
+            <SliderRow
+              label="基準 VIX"
               value={baseVix} unit="" color="text-blue-300"
-              min={10} max={50} step={1}
+              min={10} max={40} step={1}
               onChange={setBaseVix}
-              hint="圖表的 VIX 起始基準點"
-            />
-            <SliderRow
-              label="啟動保護門檻 (Strike)"
-              value={strikePct} unit="%" color="text-indigo-300"
-              min={110} max={300} step={10}
-              onChange={setStrikePct}
-              hint={`VIX 超過 ${(baseVix * strikePct / 100).toFixed(1)} 時開始理賠`}
-            />
-            <SliderRow
-              label="保險費成本 (Premium)"
-              value={premium} unit="%" color="text-purple-300"
-              min={0} max={20} step={0.5}
-              onChange={setPremium}
-              hint="平時每期支付的固定成本"
-            />
-            <SliderRow
-              label="Gamma 賠付乘數"
-              value={multiplier} unit="x" color="text-teal-300"
-              min={0.5} max={2.0} step={0.1}
-              onChange={setMultiplier}
-              hint="選擇權觸發後的理賠放大倍數"
             />
           </div>
         </GlassCard>
 
-        {/* 線條勾選 */}
-        <GlassCard className="border-l-4 border-l-slate-500">
+        {/* 避險引擎參數 */}
+        <GlassCard className={`border-l-4 ${isShort ? 'border-l-indigo-500' : 'border-l-emerald-500'}`}>
           <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
-            圖表線條顯示
+            {isShort ? "防禦引擎細節" : "收租引擎細節"}
           </h4>
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox" checked={showTrad}
-                onChange={e => setShowTrad(e.target.checked)}
-                className="w-4 h-4 rounded accent-red-500 cursor-pointer"
-              />
-              <span className="flex items-center gap-2 text-sm">
-                <span className="inline-block w-6 border-t-2 border-dashed border-red-400" />
-                <span className="text-red-300 group-hover:text-red-200 transition-colors">
-                  基礎放空部位（傳統 ETN）
-                </span>
-              </span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox" checked={showCall}
-                onChange={e => setShowCall(e.target.checked)}
-                className="w-4 h-4 rounded accent-violet-500 cursor-pointer"
-              />
-              <span className="flex items-center gap-2 text-sm">
-                <span className="inline-block w-6 border-t-2 border-dashed border-violet-400" />
-                <span className="text-violet-300 group-hover:text-violet-200 transition-colors">
-                  買入選擇權（保險部位）
-                </span>
-              </span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox" checked={showCombined}
-                onChange={e => setShowCombined(e.target.checked)}
-                className="w-4 h-4 rounded accent-emerald-500 cursor-pointer"
-              />
-              <span className="flex items-center gap-2 text-sm">
-                <span className="inline-block w-6 border-t-4 border-emerald-400" />
-                <span className="text-emerald-300 group-hover:text-emerald-200 transition-colors">
-                  組合總損益（創新避險 ETN）
-                </span>
-              </span>
-            </label>
+          <div className="space-y-5">
+            {isShort ? (
+              <>
+                <SliderRow
+                  label="保護啟動門檻 (Strike)"
+                  value={strikePctShort} unit="%" color="text-indigo-300"
+                  min={110} max={250} step={10}
+                  onChange={setStrikePctShort}
+                  hint={`VIX 超過 ${(baseVix * strikePctShort / 100).toFixed(1)} 時開始理賠`}
+                />
+                <SliderRow
+                  label="保費提撥 (Premium)"
+                  value={premiumShort} unit="%" color="text-purple-300"
+                  min={1} max={15} step={0.5}
+                  onChange={setPremiumShort}
+                />
+                <SliderRow
+                  label="Gamma 賠付倍數"
+                  value={multiplier} unit="x" color="text-teal-300"
+                  min={0.5} max={2.0} step={0.1}
+                  onChange={setMultiplier}
+                />
+              </>
+            ) : (
+              <>
+                <SliderRow
+                  label="利潤封頂門檻 (Strike)"
+                  value={strikePctLong} unit="%" color="text-emerald-300"
+                  min={110} max={200} step={5}
+                  onChange={setStrikePctLong}
+                  hint={`VIX 高於 ${(baseVix * strikePctLong / 100).toFixed(1)} 時利潤停止增長`}
+                />
+                <SliderRow
+                  label="權利金收租率 (Yield)"
+                  value={premiumLong} unit="%" color="text-teal-300"
+                  min={2} max={20} step={1}
+                  onChange={setPremiumLong}
+                  hint="每月/期預計收取的權利金補助"
+                />
+              </>
+            )}
           </div>
         </GlassCard>
-
       </div>
 
-      {/* ─── 右側：到期損益圖 ─── */}
+      {/* 右側：損益圖 */}
       <GlassCard className="flex-1 min-h-0 flex flex-col">
-        <h4 className="text-lg font-light text-slate-200 mb-1 flex-shrink-0">
-          到期損益圖
-        </h4>
-        <p className="text-xs text-slate-500 mb-4 flex-shrink-0">
-          基準 VIX = <span className="text-blue-300 font-mono">{baseVix}</span>
-          ｜履約價 = <span className="text-indigo-300 font-mono">{(baseVix * strikePct / 100).toFixed(1)}</span>
-          ｜保費 = <span className="text-purple-300 font-mono">-{premium}%</span>
-          ｜Gamma = <span className="text-teal-300 font-mono">{multiplier}x</span>
+        <h4 className="text-lg font-light text-slate-200 mb-1">到期損益圖 (Payoff Diagram)</h4>
+        <p className="text-xs text-slate-500 mb-4">
+          橫軸代表 VIX 結算價格，縱軸代表該策略的總損益百分比。
         </p>
 
         <div className="flex-1 relative min-h-0">
-          <div className="absolute inset-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={payoffData} margin={{ top: 20, right: 30, left: 0, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis
-                  dataKey="vixPrice"
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                  stroke="#64748b"
-                  tick={{ fill: '#64748b' }}
-                  label={{ value: '結算時的 VIX 指數', position: 'insideBottom', offset: -10, fill: '#94a3b8' }}
-                />
-                <YAxis
-                  stroke="#64748b"
-                  tick={{ fill: '#64748b' }}
-                  label={{ value: '總損益 (%)', angle: -90, position: 'insideLeft', fill: '#94a3b8' }}
-                />
-                <Tooltip
-                  formatter={(value: number) => `${value.toFixed(1)}%`}
-                  labelFormatter={(label) => `VIX 結算價: ${label}`}
-                  contentStyle={{ backgroundColor: 'rgba(15,23,42,0.9)', borderColor: '#334155', borderRadius: '8px' }}
-                />
-                <Legend wrapperStyle={{ paddingTop: '10px' }} />
-
-                {/* 0% 盈虧線 */}
-                <ReferenceLine y={0} stroke="#475569" strokeWidth={2} opacity={0.5} />
-                {/* 起始 VIX 參考線 */}
-                <ReferenceLine
-                  x={baseVix}
-                  stroke="#3b82f6" strokeDasharray="3 3"
-                  label={{ value: '起始 VIX', position: 'top', fill: '#3b82f6', fontSize: 12 }}
-                />
-                {/* 履約價參考線 */}
-                <ReferenceLine
-                  x={baseVix * (strikePct / 100)}
-                  stroke="#a855f7" strokeDasharray="3 3"
-                  label={{ value: '履約價 (Strike)', position: 'top', fill: '#a855f7', fontSize: 12 }}
-                />
-
-                {showTrad && (
-                  <Line
-                    type="monotone" dataKey="tradReturn"
-                    name="1. 基礎放空部位 (傳統 ETN)"
-                    stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="5 5"
-                  />
-                )}
-                {showCall && (
-                  <Line
-                    type="monotone" dataKey="isolatedCall"
-                    name="2. 買入選擇權 (保險部位)"
-                    stroke="#8b5cf6" strokeWidth={2} dot={false} strokeDasharray="5 5"
-                  />
-                )}
-                {showCombined && (
-                  <Line
-                    type="monotone" dataKey="innReturn"
-                    name="3. 組合總損益 (創新避險 ETN)"
-                    stroke="#10b981" strokeWidth={4} dot={false}
-                  />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={payoffData} margin={{ top: 20, right: 30, left: 0, bottom: 30 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="vixPrice" type="number" domain={[5, 60]} stroke="#64748b" tick={{fill:'#64748b'}} />
+              <YAxis stroke="#64748b" tick={{fill:'#64748b'}} />
+              <Tooltip
+                formatter={(value: number) => `${value.toFixed(1)}%`}
+                contentStyle={{ backgroundColor: 'rgba(15,23,42,0.9)', borderColor: '#334155' }}
+              />
+              <Legend />
+              <ReferenceLine y={0} stroke="#475569" strokeWidth={2} />
+              <ReferenceLine x={baseVix} stroke="#3b82f6" strokeDasharray="3 3" label={{value:'起始VIX', fill:'#3b82f6', fontSize:12}} />
+              
+              <Line type="monotone" dataKey="tradReturn" name="1. 傳統部位" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              <Line type="monotone" dataKey="optionReturn" name={isShort ? "2. 保險部位 (買入)" : "2. 權利金補貼 (賣出)"} stroke="#8b5cf6" strokeWidth={2} dot={false} strokeDasharray="3 3" />
+              <Line type="monotone" dataKey="innReturn" name="3. 創新避險 ETN (組合)" stroke="#10b981" strokeWidth={4} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </GlassCard>
-
     </div>
   );
 }
