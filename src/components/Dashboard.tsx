@@ -165,36 +165,61 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500/40 to-transparent"></div>
               <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]"></span>
-                核心反向策略
+                全天候雙引擎系統
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-light">與傳統商品相同，主要透過做空 VIX 期貨來賺取穩定轉倉收益，捕捉市場長期平靜時的利潤。</p>
+              <p className="text-slate-400 text-sm leading-relaxed font-light">自動偵測槓桿方向：做空時啟動「尾部防禦引擎」買入保護，做多時啟動「掩護性買權引擎」收取權利金補貼耗損。</p>
             </GlassCard>
             <GlassCard className="relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500/40 to-transparent"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500/40 to-transparent"></div>
               <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></span>
-                提撥避險成本
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"></span>
+                {params.leverage < 0 ? '階梯式尾部防禦' : '掩護性買權補血'}
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-light">將每日轉倉收益強制提撥固定比例 ({params.premiumCost}%) 去買入極度價外的 VIX 買權 (Deep OTM Call)，將「無限風險」轉為「有限風險」。</p>
+              <p className="text-slate-400 text-sm leading-relaxed font-light">
+                {params.leverage < 0
+                  ? `動態保費隨 VIX 調整（VIX 越高越貴），並提供三階段賠付：30%→0.3x、50%→0.6x、80%→1.0x。`
+                  : `賣出價外買權收取權利金 (${params.coveredCallYield}%) 以補貼轉倉耗損。代價：VIX 暴漲超過 30% 時漲幅封頂。`
+                }
+              </p>
             </GlassCard>
             <GlassCard className="relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500/40 to-transparent"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/40 to-transparent"></div>
               <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                Gamma 賠付保護
+                動態定價機制
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-light">犧牲了平時些微的獲利速度。但當黑天鵝發生時，選擇權的 Gamma 巨幅賠付將能成功阻止清算歸零，保全大部分本金。</p>
+              <p className="text-slate-400 text-sm leading-relaxed font-light">
+                {params.leverage < 0
+                  ? '保費 = 基礎提撥比例 × (當日 VIX / 20)，模擬真實市場中恐慌時選擇權隱含波動率飆升的現象。'
+                  : '收租 = 基礎收租率 × (當日 VIX / 20)，VIX 越高時賣出的買權權利金越貴，收租效果越好。'
+                }
+              </p>
             </GlassCard>
           </div>
 
           <GlassCard className="!bg-black/40 border-white/[0.02]">
-            <h4 className="text-xs tracking-widest uppercase font-semibold text-teal-400/70 mb-3">數學運算邏輯</h4>
+            <h4 className="text-xs tracking-widest uppercase font-semibold text-teal-400/70 mb-3">
+              數學運算邏輯 — {params.leverage < 0 ? '模組 A：階梯式尾部防禦引擎' : '模組 B：掩護性買權補血引擎'}
+            </h4>
             <code className="text-[13px] text-slate-300/80 block font-mono leading-loose">
-              <span className="text-teal-300/80">▸ 平時報酬 = (VIX 變動率 × 槓桿) + [實際轉倉收益 × (1 - 權利金提撥 {params.premiumCost}%)]</span><br/>
-              　實際轉倉收益 = 動態市場價差 × (-槓桿方向)<br/><br/>
-              <span className="text-teal-300/80">▸ 黑天鵝觸發條件：VIX 單日暴漲 &gt; 50%</span><br/>
-              　賠付報酬 = 平時報酬 + <span className="text-emerald-300">Gamma 賠付 (VIX 暴漲幅度 × 0.8)</span><br/><br/>
-              　今日淨值 = 昨日淨值 × (1 + 當日報酬)
+              {params.leverage < 0 ? (
+                <>
+                  <span className="text-red-300/80">▸ 動態保費 = {params.tailRiskPremium}% × (當日 VIX / 20) / 252</span><br/>
+                  　平時報酬 = (VIX 變動率 × 槓桿) + 實際轉倉收益 - 動態保費<br/><br/>
+                  <span className="text-red-300/80">▸ 階梯式 Gamma 賠付（VIX 暴漲觸發）：</span><br/>
+                  　漲幅 30%~50% → 額外 + 漲幅 × 0.3（輕度保護）<br/>
+                  　漲幅 50%~80% → 額外 + 漲幅 × 0.6（中度保護）<br/>
+                  　漲幅 &gt; 80% → 額外 + 漲幅 × 1.0（全額保護）<br/>
+                </>
+              ) : (
+                <>
+                  <span className="text-emerald-300/80">▸ 動態收租 = {params.coveredCallYield}% × (當日 VIX / 20) / 252</span><br/>
+                  　平時報酬 = (VIX 變動率 × 槓桿) + 實際轉倉收益 + 動態收租<br/><br/>
+                  <span className="text-emerald-300/80">▸ 上檔封頂（賣出買權代價）：</span><br/>
+                  　VIX 單日暴漲超過 30% 時，漲幅貢獻封頂於 30%<br/>
+                  　例：VIX 暴漲 100%，傳統賺 100%，創新只賺 30% + 收租<br/>
+                </>
+              )}
             </code>
           </GlassCard>
 

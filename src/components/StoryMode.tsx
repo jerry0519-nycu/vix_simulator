@@ -127,7 +127,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
             <h3 className="text-xl font-light text-blue-300">階段一：牛市的幻覺 (Day 0 - Day {params.blackSwanDay - 1})</h3>
             <p className="text-slate-300 font-light leading-relaxed">
               在市場平靜的時期，VIX 維持低檔震盪。<span className="text-red-400 font-medium">傳統 ETN</span> 靠著穩定的正價差持續創造豐厚利潤。<br/>
-              而<span className="text-teal-400 font-medium">創新避險 ETN</span> 因為必須持續提撥 {params.premiumCost}% 的收益去購買極度價外買權，淨值成長幅度稍稍落後。
+              而<span className="text-teal-400 font-medium">創新避險 ETN</span> 因為必須持續提撥動態保費去購買極度價外買權（基礎提撥率 {params.tailRiskPremium}%，實際保費隨 VIX 動態調整），淨值成長幅度稍稍落後。
             </p>
             {!isPlaying && currentDay === targetDay && (
               <div className="pt-4 border-t border-white/10 mt-4">
@@ -240,8 +240,8 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
 
             <p className="mb-2"><strong className="text-slate-100 font-medium">4. 創新避險 ETN 的風險控制</strong></p>
             <ul className="list-disc pl-5 space-y-1 text-slate-400">
-              <li>平時每日報酬率會將轉倉收益扣除 <span className="text-teal-300">權利金提撥比例 ({params.premiumCost}%)</span> 去買保護，因此平時獲利會比傳統型稍微落後。</li>
-              <li><strong>黑天鵝事件：</strong> 當 VIX 單日暴漲超過 50% 時，傳統 ETN 單日虧損超過 100% 觸發強制歸零，但創新 ETN 會觸發「巨幅賠付」，獲得額外補償來保全本金。</li>
+              <li>平時每日報酬率會扣除動態保費（基礎提撥率 <span className="text-teal-300">{params.tailRiskPremium}%</span> × VIX/20 × 1/252）去買保護，因此平時獲利會比傳統型稍微落後。</li>
+              <li><strong>階梯式賠付：</strong> VIX 單日暴漲 30%~50% 時觸發 0.3x 賠付，50%~80% 觸發 0.6x 賠付，超過 80% 觸發 1.0x 全額賠付，保全本金。</li>
             </ul>
           </div>
         )}

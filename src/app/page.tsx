@@ -17,7 +17,8 @@ export default function Home() {
     leverage: -1.0,
     blackSwanDay: 200,
     blackSwanSpike: 100,
-    premiumCost: 10,
+    tailRiskPremium: 10,
+    coveredCallYield: 10,
   });
 
   const shocks = useShocks(seed);
