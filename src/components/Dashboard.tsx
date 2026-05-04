@@ -7,7 +7,7 @@ import { TraditionalChart } from "./charts/TraditionalChart";
 import { InnovativeChart } from "./charts/InnovativeChart";
 import { StoryMode } from "./StoryMode";
 import { ReplicationMode } from "./ReplicationMode";
-import { Zap, ShieldCheck, Activity, Target } from "lucide-react";
+import { Zap, ShieldCheck, Activity, Target, TrendingUp, Percent } from "lucide-react";
 
 type DashboardProps = {
   data: DailyData[];
@@ -29,7 +29,6 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
       <div className="relative p-6 rounded-2xl border border-white/[0.05] bg-gradient-to-br from-white/[0.03] to-transparent overflow-hidden shadow-2xl shrink-0">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-teal-500/10 rounded-full blur-[80px] pointer-events-none"></div>
         <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none"></div>
-        
         <h1 className="text-3xl font-light tracking-widest text-slate-100 flex items-center gap-4">
           <span className="w-10 h-[2px] bg-gradient-to-r from-teal-400 to-purple-500"></span>
           量化避險：全天候動態 VIX 模擬器
@@ -67,18 +66,17 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
         </div>
       ) : activeTab === "traditional" ? (
         <div className="space-y-6 animate-in fade-in zoom-in duration-500">
-          {/* 傳統頁內容省略部分，保持原樣但更新標題 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <GlassCard className="relative overflow-hidden border-l-4 border-blue-500">
-              <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">動態正價差收益</h3>
+            <GlassCard className="border-l-4 border-blue-500">
+              <h3 className="text-lg font-light mb-3 text-slate-100">動態正價差收益</h3>
               <p className="text-slate-400 text-sm font-light">VIX 低於 20 時市場處於正價差，做空端每日轉倉賺取溢價 ({params.baseContango}%/天)。</p>
             </GlassCard>
-            <GlassCard className="relative overflow-hidden border-l-4 border-orange-500">
-              <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">每日重平衡機制</h3>
+            <GlassCard className="border-l-4 border-orange-500">
+              <h3 className="text-lg font-light mb-3 text-slate-100">每日重平衡機制</h3>
               <p className="text-slate-400 text-sm font-light">為了維持固定槓桿 ({params.leverage}x)，基金必須每天重平衡，這會產生波動耗損。</p>
             </GlassCard>
-            <GlassCard className="relative overflow-hidden border-l-4 border-red-500">
-              <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">無限尾部風險</h3>
+            <GlassCard className="border-l-4 border-red-500">
+              <h3 className="text-lg font-light mb-3 text-slate-100">無限尾部風險</h3>
               <p className="text-slate-400 text-sm font-light">黑天鵝發生時缺乏保護。若單日虧損達 100%，將觸發加速清算條款淨值歸零。</p>
             </GlassCard>
           </div>
@@ -123,29 +121,57 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
             </GlassCard>
             
             <div className="grid grid-cols-2 gap-4">
-              <GlassCard className="flex flex-col justify-center items-center p-6 border-t-2 border-t-blue-500">
-                <Target size={24} className="text-blue-400 mb-2" />
-                <p className="text-xs text-slate-500 uppercase tracking-tighter">最終淨值 (NAV)</p>
-                <p className={`text-4xl font-bold font-mono ${stats.innBankrupt ? 'text-red-500' : 'text-white'}`}>
-                  ${stats.finalInnNav.toFixed(2)}
-                </p>
-              </GlassCard>
-              <GlassCard className="flex flex-col justify-center items-center p-6 border-t-2 border-t-orange-500">
-                <Activity size={24} className="text-orange-400 mb-2" />
-                <p className="text-xs text-slate-500 uppercase tracking-tighter">最大回撤改善</p>
-                <p className="text-4xl font-bold font-mono text-white">
-                  {((stats.tradMaxDrawdown - stats.innMaxDrawdown) * 100).toFixed(1)}%
-                </p>
-              </GlassCard>
+              {isShort ? (
+                <>
+                  <GlassCard className="flex flex-col justify-center items-center p-6 border-t-2 border-t-blue-500">
+                    <Target size={24} className="text-blue-400 mb-2" />
+                    <p className="text-xs text-slate-500 uppercase tracking-tighter">最終淨值 (NAV)</p>
+                    <p className={`text-4xl font-bold font-mono ${stats.innBankrupt ? 'text-red-500' : 'text-white'}`}>
+                      ${stats.finalInnNav.toFixed(2)}
+                    </p>
+                  </GlassCard>
+                  <GlassCard className="flex flex-col justify-center items-center p-6 border-t-2 border-t-orange-500">
+                    <Activity size={24} className="text-orange-400 mb-2" />
+                    <p className="text-xs text-slate-500 uppercase tracking-tighter">最大回撤改善</p>
+                    <p className="text-4xl font-bold font-mono text-white">
+                      {((stats.tradMaxDrawdown - stats.innMaxDrawdown) * 100).toFixed(1)}%
+                    </p>
+                  </GlassCard>
+                </>
+              ) : (
+                <>
+                  <GlassCard className="flex flex-col justify-center items-center p-6 border-t-2 border-t-emerald-500">
+                    <TrendingUp size={24} className="text-emerald-400 mb-2" />
+                    <p className="text-xs text-slate-500 uppercase tracking-tighter text-center">黑天鵝前平均領先</p>
+                    <p className="text-4xl font-bold font-mono text-white">
+                      +{stats.preSwanOutperformanceAvg.toFixed(2)}%
+                    </p>
+                  </GlassCard>
+                  <GlassCard className="flex flex-col justify-center items-center p-6 border-t-2 border-t-teal-500">
+                    <Percent size={24} className="text-teal-400 mb-2" />
+                    <p className="text-xs text-slate-500 uppercase tracking-tighter text-center">平時勝率 (Inn &gt; Trad)</p>
+                    <p className="text-4xl font-bold font-mono text-white">
+                      {stats.preSwanWinRatio.toFixed(1)}%
+                    </p>
+                  </GlassCard>
+                </>
+              )}
+              
               <GlassCard className="col-span-2 flex items-center justify-between p-6">
                 <div>
-                  <p className="text-xs text-slate-500 uppercase">存活與獲利效率</p>
+                  <p className="text-xs text-slate-500 uppercase">策略核心評價</p>
                   <p className="text-lg text-slate-200">
-                    {stats.innBankrupt ? "避險失敗（極端壓力）" : (isShort ? "成功抵禦黑天鵝" : "顯著緩解耗損")}
+                    {isShort 
+                      ? (stats.innBankrupt ? "避險失敗（極端壓力）" : "成功抵禦黑天鵝歸零")
+                      : (stats.preSwanOutperformanceAvg > 0 ? "顯著補血：成功緩解耗損" : "效益平平：建議提高收租率")
+                    }
                   </p>
                 </div>
-                <div className={`px-4 py-2 rounded-lg text-sm font-bold ${stats.finalInnNav > stats.finalTradNav ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                  {stats.finalInnNav > stats.finalTradNav ? '跑贏傳統型' : '跑輸傳統型'}
+                <div className={`px-4 py-2 rounded-lg text-sm font-bold ${isShort ? (stats.finalInnNav > stats.finalTradNav ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400') : 'bg-emerald-500/20 text-emerald-400'}`}>
+                  {isShort 
+                    ? (stats.finalInnNav > stats.finalTradNav ? '成功保全本金' : '保護成本過高')
+                    : '補血引擎運行中'
+                  }
                 </div>
               </GlassCard>
             </div>
@@ -164,11 +190,11 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
                       ● 創新{isShort ? '避險' : '補血'}引擎
                    </p>
                    {isShort ? (
-                     <p className="text-slate-400 italic">階梯賠付: 30%/50%/80% 觸發 0.3x/0.6x/1.0x 補償</p>
+                     <p className="text-slate-400 italic">階梯賠付已隨槓桿比例 (|{params.leverage}|x) 同步放大</p>
                    ) : (
-                     <p className="text-slate-400 italic">上檔限制: VIX 單日漲幅貢獻封頂於 30%</p>
+                     <p className="text-slate-400 italic">掩護性買權收租規模隨槓桿 (|{params.leverage}|x) 同步放大</p>
                    )}
-                   <p className="text-slate-400">動態{isShort ? '保費' : '收租'} = 基準率 × (VIX/20)</p>
+                   <p className="text-slate-400">當日報酬 = 傳統報酬 {isShort ? '-' : '+'} 動態{isShort ? '保費' : '收租'}</p>
                 </div>
              </div>
           </GlassCard>

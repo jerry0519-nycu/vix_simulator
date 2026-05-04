@@ -49,7 +49,7 @@ function calcMarketContango(currentVix: number, baseContango: number): number {
   }
 }
 
-// ── 核心模擬引擎（全天候雙引擎動態避險系統 - 槓桿連動定價版） ──
+// ── 核心模擬引擎 ──
 export function useSimulation(params: SimulationParams, shocks: number[]) {
   const data = useMemo(() => {
     const result: DailyData[] = [];
@@ -68,9 +68,6 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
         continue;
       }
 
-      // ══════════════════════════════════════════════
-      // 步驟 1：VIX 價格變化（OU 均值回歸）
-      // ══════════════════════════════════════════════
       let vixReturn = 0;
       const safeVix = Math.max(currentVix, 0.1); 
 
@@ -85,15 +82,10 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       }
       currentVix = Math.max(currentVix * (1 + vixReturn), 5);
 
-      // ══════════════════════════════════════════════
-      // 步驟 2：動態市場價差 & 實際轉倉收益
-      // ══════════════════════════════════════════════
       const marketContango = calcMarketContango(currentVix, params.baseContango);
       const actualRollYield = marketContango * (-Math.sign(params.leverage));
 
-      // ══════════════════════════════════════════════
-      // 步驟 3：傳統 ETN 淨值
-      // ══════════════════════════════════════════════
+      // 傳統型
       if (tradNav > 0) {
         const tradReturn = (vixReturn * params.leverage) + actualRollYield;
         if (tradReturn <= -1) {
@@ -104,58 +96,34 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
         }
       }
 
-      // ══════════════════════════════════════════════
-      // 步驟 4：創新 ETN 淨值（槓桿連動定價）
-      // ══════════════════════════════════════════════
+      // 創新型
       if (innNav > 0) {
         let innReturn = 0;
-
         if (params.leverage < 0) {
-          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 模組 A：槓桿連動尾部防禦 (Short)
-          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 保費與槓桿掛鉤：風險越高，保費規模越大
           const dynamicPremium = (params.tailRiskPremium / 100) * (currentVix / 20) * absLev / 252;
           innReturn = (vixReturn * params.leverage) + actualRollYield - dynamicPremium;
-
-          // 階梯式賠付也乘上槓桿倍數，確保高槓桿下也能覆蓋虧損
           const absVixReturn = Math.abs(vixReturn);
           if (vixReturn > 0.30) {
-            if (absVixReturn <= 0.50) {
-              innReturn += absVixReturn * 0.3 * absLev;
-            } else if (absVixReturn <= 0.80) {
-              innReturn += absVixReturn * 0.6 * absLev;
-            } else {
-              innReturn += absVixReturn * 1.0 * absLev;
-            }
+            if (absVixReturn <= 0.50) innReturn += absVixReturn * 0.3 * absLev;
+            else if (absVixReturn <= 0.80) innReturn += absVixReturn * 0.6 * absLev;
+            else innReturn += absVixReturn * 1.0 * absLev;
           }
-
         } else if (params.leverage > 0) {
-          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 模組 B：槓桿連動掩護性買權 (Long)
-          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 收租規模隨槓桿放大
           const dynamicYield = (params.coveredCallYield / 100) * (currentVix / 20) * absLev / 252;
-
-          // 上檔封頂維持 30%（代表放棄超過此幅度的 VIX 上漲利潤）
           const cappedVixReturn = Math.min(vixReturn, 0.30);
           innReturn = (cappedVixReturn * params.leverage) + actualRollYield + dynamicYield;
-
         } else {
           innReturn = actualRollYield;
         }
 
-        if (innReturn <= -1) {
-          innNav = 0;
-        } else {
+        if (innReturn <= -1) innNav = 0;
+        else {
           innNav = innNav * (1 + innReturn);
           if (innNav < 0) innNav = 0;
         }
       }
-
       result.push({ day, vix: currentVix, tradNav, innNav, marketContango, actualRollYield });
     }
-
     return result;
   }, [params, shocks]);
 
@@ -169,7 +137,12 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
     let tradMaxDrawdown = 0;
     let innMaxDrawdown = 0;
 
-    data.forEach(d => {
+    // 黑天鵝前數據計算
+    let winCount = 0;
+    let diffSum = 0;
+    const preSwanDays = params.blackSwanDay;
+
+    data.forEach((d, i) => {
       if (d.tradNav > maxTradNav) maxTradNav = d.tradNav;
       if (d.innNav > maxInnNav) maxInnNav = d.innNav;
 
@@ -178,6 +151,14 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
 
       const innDd = maxInnNav > 0 ? (maxInnNav - d.innNav) / maxInnNav : 0;
       if (innDd > innMaxDrawdown) innMaxDrawdown = innDd;
+
+      // 統計黑天鵝爆發前的情況 (i < blackSwanDay)
+      if (i < params.blackSwanDay) {
+        if (d.innNav > d.tradNav) winCount++;
+        if (d.tradNav > 0) {
+          diffSum += (d.innNav - d.tradNav) / d.tradNav;
+        }
+      }
     });
 
     return {
@@ -187,8 +168,10 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       innMaxDrawdown,
       tradBankrupt: finalTradNav === 0,
       innBankrupt: finalInnNav === 0,
+      preSwanOutperformanceAvg: (diffSum / preSwanDays) * 100, // 平均領先 %
+      preSwanWinRatio: (winCount / preSwanDays) * 100,         // 勝率 %
     };
-  }, [data]);
+  }, [data, params.blackSwanDay]);
 
   return { data, stats };
 }
