@@ -261,7 +261,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
             <ul className="list-disc pl-5 space-y-2 text-slate-400">
               {isShort ? (
                 <>
-                  <li><strong>階梯式尾部防禦 (Shorting)：</strong> 當 VIX 暴漲 > 30% 時觸發分段賠付。</li>
+                  <li><strong>階梯式尾部防禦 (Shorting)：</strong> 當 VIX 暴漲 &gt; 30% 時觸發分段賠付。</li>
                   <li><strong>動態保費成本：</strong> {params.tailRiskPremium}% × (當日 VIX / 20) / 252。</li>
                 </>
               ) : (

@@ -71,16 +71,21 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       // 步驟 1：VIX 價格變化（OU 均值回歸）
       // ══════════════════════════════════════════════
       let vixReturn = 0;
+      const safeVix = Math.max(currentVix, 0.1); // 防止除以零
+
       if (day === params.blackSwanDay) {
         vixReturn = params.blackSwanSpike / 100;
       } else {
         const z0 = activeShocks[day % activeShocks.length];
         const kappa = 0.05;
         const longTermMean = Number(params.initialVix);
-        const drift = kappa * (longTermMean - currentVix) / currentVix;
+        // OU 漂移項：kappa * (均值 - 當前值)
+        const drift = kappa * (longTermMean - safeVix) / safeVix;
         vixReturn = drift + z0 * (params.dailyVol / 100);
       }
-      currentVix = currentVix * (1 + vixReturn);
+      
+      // 更新 VIX 並限制最小值為 5 (現實中 VIX 極少低於 9)
+      currentVix = Math.max(currentVix * (1 + vixReturn), 5);
 
       // ══════════════════════════════════════════════
       // 步驟 2：動態市場價差 & 實際轉倉收益
