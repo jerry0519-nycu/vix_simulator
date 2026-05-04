@@ -33,24 +33,24 @@ export default function Home() {
   }
 
   return (
-    <main className="relative flex h-screen w-full p-6 overflow-hidden">
-      {/* Ambient Glow Effects */}
+    <main className="relative flex h-screen w-full p-6 overflow-hidden bg-[#030303]">
       <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-purple-600/15 rounded-full blur-[140px] pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-[-15%] right-[-5%] w-[40%] h-[50%] bg-teal-600/10 rounded-full blur-[140px] pointer-events-none mix-blend-screen" />
-      <div className="absolute top-[30%] left-[40%] w-[30%] h-[30%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
       
       <div className="relative z-10 flex h-full w-full space-x-6">
         {activeTab !== "story" && activeTab !== "replication" && (
           <Sidebar params={params} setParams={setParams} onRegenerate={() => setSeed(s => s + 1)} />
         )}
-        <Dashboard 
-          data={data} 
-          stats={stats} 
-          params={params} 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
-          shocks={shocks} 
-        />
+        <div className="flex-1 flex flex-col min-h-0">
+          <Dashboard 
+            data={data} 
+            stats={stats} 
+            params={params} 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            shocks={shocks} 
+          />
+        </div>
       </div>
     </main>
   );
