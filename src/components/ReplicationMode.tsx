@@ -84,7 +84,7 @@ export function ReplicationMode() {
         {/* 商品解構說明 */}
         <GlassCard className="border-l-4 border-l-indigo-500">
           <h3 className="text-xl font-light text-indigo-300 mb-3">
-            商品解構與複製 (Replication)
+            商品解構與複製
           </h3>
           <p className="text-slate-300 text-sm leading-relaxed font-light mb-4">
             要創造出「反向 VIX ETN」，可以直接使用模組化合約來「組裝」：<br /><br />
@@ -92,7 +92,7 @@ export function ReplicationMode() {
             <span className="text-teal-400 font-medium">● 創新 ETN</span> = 現金部位 + 放空 VIX 期貨 + <strong className="text-teal-300">買入極度價外買權 (Deep OTM Call)</strong>
           </p>
           <div className="p-3 bg-black/40 rounded border border-indigo-500/20 text-xs text-slate-400">
-            <strong>核心概念：</strong> 選擇權就像「巨災保險」。平時繳保費使利潤微幅下滑；當 VIX 暴漲突破履約價時，無限獲利完美抵銷期貨的無限虧損。
+            價外選擇權可視為巨災保險，雖然平時繳保費使利潤微幅下滑；但當 VIX 暴漲突破履約價時，無限獲利可抵銷期貨的無限虧損。
           </div>
         </GlassCard>
 
@@ -186,7 +186,7 @@ export function ReplicationMode() {
       {/* ─── 右側：到期損益圖 ─── */}
       <GlassCard className="flex-1 min-h-0 flex flex-col">
         <h4 className="text-lg font-light text-slate-200 mb-1 flex-shrink-0">
-          到期損益圖 (Payoff Diagram)
+          到期損益圖
         </h4>
         <p className="text-xs text-slate-500 mb-4 flex-shrink-0">
           基準 VIX = <span className="text-blue-300 font-mono">{baseVix}</span>

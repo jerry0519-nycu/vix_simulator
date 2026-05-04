@@ -95,9 +95,9 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/40 to-transparent"></div>
               <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></span>
-                正價差收益 (Contango)
+                正價差收益
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-light">此商品平時依靠期貨市場的 Contango 結構，每日轉倉能賺取穩定的 Roll Yield，使淨值在平時呈現穩定向上趨勢。</p>
+              <p className="text-slate-400 text-sm leading-relaxed font-light">此商品平時依靠期貨市場的正價差結構，每日轉倉能賺取穩定的轉倉收益，使淨值在平時呈現穩定向上趨勢。</p>
             </GlassCard>
             <GlassCard className="relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500/40 to-transparent"></div>
@@ -118,7 +118,7 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
           </div>
           
           <GlassCard className="!bg-black/40 border-white/[0.02]">
-            <h4 className="text-xs tracking-widest uppercase font-semibold text-blue-400/70 mb-3">Mathematical Logic</h4>
+            <h4 className="text-xs tracking-widest uppercase font-semibold text-blue-400/70 mb-3">數學運算邏輯</h4>
             <code className="text-[13px] text-slate-300/80 block font-mono leading-loose">
               每日報酬 = (VIX 當日變動率 × 槓桿倍數) + 每日轉倉收益率<br/>
               今日淨值 = 昨日淨值 × (1 + 每日報酬)<br/>
@@ -139,13 +139,13 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
               </p>
             </GlassCard>
             <GlassCard className="text-center">
-              <p className="text-sm text-slate-400 mb-1">最大回撤 (Max Drawdown)</p>
+              <p className="text-sm text-slate-400 mb-1">最大回撤</p>
               <p className="text-3xl font-bold text-orange-400">
                 {(stats.tradMaxDrawdown * 100).toFixed(2)}%
               </p>
             </GlassCard>
             <GlassCard className="text-center">
-              <p className="text-sm text-slate-400 mb-1">破產狀態 (Bankruptcy)</p>
+              <p className="text-sm text-slate-400 mb-1">破產狀態</p>
               <p className={`text-3xl font-bold ${stats.tradBankrupt ? 'text-red-500' : 'text-green-400'}`}>
                 {stats.tradBankrupt ? "已清算歸零" : "存活"}
               </p>
@@ -182,7 +182,7 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
           </div>
 
           <GlassCard className="!bg-black/40 border-white/[0.02]">
-            <h4 className="text-xs tracking-widest uppercase font-semibold text-teal-400/70 mb-3">Mathematical Logic</h4>
+            <h4 className="text-xs tracking-widest uppercase font-semibold text-teal-400/70 mb-3">數學運算邏輯</h4>
             <code className="text-[13px] text-slate-300/80 block font-mono leading-loose">
               平時報酬 = (VIX 變動率 × 槓桿) + [轉倉收益 × (1 - 權利金提撥比例)]<br/>
               黑天鵝報酬 = 平時報酬 + <span className="text-teal-300/80">選擇權 Gamma 賠付 (VIX 暴漲幅度 × 0.8)</span><br/>
@@ -203,13 +203,13 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
               </p>
             </GlassCard>
             <GlassCard className="text-center">
-              <p className="text-sm text-slate-400 mb-1">最大回撤 (Max Drawdown)</p>
+              <p className="text-sm text-slate-400 mb-1">最大回撤</p>
               <p className="text-3xl font-bold text-orange-400">
                 {(stats.innMaxDrawdown * 100).toFixed(2)}%
               </p>
             </GlassCard>
             <GlassCard className="text-center">
-              <p className="text-sm text-slate-400 mb-1">破產狀態 (Bankruptcy)</p>
+              <p className="text-sm text-slate-400 mb-1">破產狀態</p>
               <p className={`text-3xl font-bold ${stats.innBankrupt ? 'text-red-500' : 'text-teal-400'}`}>
                 {stats.innBankrupt ? "已清算歸零" : "成功避險存活"}
               </p>

@@ -21,14 +21,14 @@ export function Sidebar({ params, setParams, onRegenerate }: SidebarProps) {
   };
 
   const sliders = [
-    { label: "模擬天數 (Trading Days)", key: "tradingDays", min: 100, max: 500, step: 1, unit: "天" },
-    { label: "VIX 初始價格 (Initial VIX)", key: "initialVix", min: 10, max: 50, step: 1, unit: "" },
-    { label: "每日市場波動率 (Daily Volatility)", key: "dailyVol", min: 1, max: 10, step: 0.1, unit: "%" },
-    { label: "每日轉倉收益率 (Daily Roll Yield)", key: "rollYield", min: -0.5, max: 0.5, step: 0.01, unit: "%" },
-    { label: "槓桿倍數 (Leverage)", key: "leverage", min: -5.0, max: 5.0, step: 0.5, unit: "x" },
-    { label: "黑天鵝爆發時間點 (Black Swan Day)", key: "blackSwanDay", min: 1, max: params.tradingDays, step: 1, unit: "天" },
-    { label: "黑天鵝暴漲幅度 (Black Swan Spike)", key: "blackSwanSpike", min: 50, max: 150, step: 1, unit: "%" },
-    { label: "權利金提撥比例 (Premium Cost)", key: "premiumCost", min: 5, max: 30, step: 1, unit: "%" },
+    { label: "模擬天數", key: "tradingDays", min: 100, max: 500, step: 1, unit: "天" },
+    { label: "VIX 初始價格", key: "initialVix", min: 10, max: 50, step: 1, unit: "" },
+    { label: "每日市場波動率", key: "dailyVol", min: 1, max: 10, step: 0.1, unit: "%" },
+    { label: "每日轉倉收益率", key: "rollYield", min: -0.5, max: 0.5, step: 0.01, unit: "%" },
+    { label: "槓桿倍數", key: "leverage", min: -5.0, max: 5.0, step: 0.5, unit: "x" },
+    { label: "黑天鵝爆發天數", key: "blackSwanDay", min: 1, max: params.tradingDays, step: 1, unit: "天" },
+    { label: "黑天鵝暴漲幅度", key: "blackSwanSpike", min: 50, max: 150, step: 1, unit: "%" },
+    { label: "權利金提撥比例", key: "premiumCost", min: 5, max: 30, step: 1, unit: "%" },
   ];
 
   return (

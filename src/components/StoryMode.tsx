@@ -110,9 +110,9 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
       case 0:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-light text-slate-100">準備展示預設情境</h3>
+            <h3 className="text-xl font-light text-slate-100">預設情境:</h3>
             <p className="text-slate-400 font-light leading-relaxed">
-              此展演將模擬一段長達 {params.tradingDays} 天的投資旅程。我們將觀察在穩定的牛市中，以及突發的黑天鵝事件下，兩種不同結構的 ETN 所面臨的命運。
+              在此預設將模擬一段長達 {params.tradingDays} 天的投資旅程。將觀察在穩定的牛市中，以及突發的黑天鵝事件下，兩種不同結構的 ETN 所面臨的損益。
             </p>
             <button
               onClick={handleNextPhase}
@@ -127,17 +127,16 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h3 className="text-xl font-light text-blue-300">階段一：牛市的幻覺 (Day 0 - Day {params.blackSwanDay - 1})</h3>
             <p className="text-slate-300 font-light leading-relaxed">
-              在市場平靜的時期，VIX 維持低檔震盪。<span className="text-red-400 font-medium">傳統 ETN</span> 靠著穩定的正價差 (Contango) 持續創造豐厚利潤。<br/>
+              在市場平靜的時期，VIX 維持低檔震盪。<span className="text-red-400 font-medium">傳統 ETN</span> 靠著穩定的正價差持續創造豐厚利潤。<br/>
               而<span className="text-teal-400 font-medium">創新避險 ETN</span> 因為必須持續提撥 {params.premiumCost}% 的收益去購買極度價外買權，淨值成長幅度稍稍落後。
             </p>
             {!isPlaying && currentDay === targetDay && (
               <div className="pt-4 border-t border-white/10 mt-4">
-                <p className="text-orange-300 text-sm mb-4 animate-pulse">然而，在這看似無害的平靜之下，一場風暴正在醞釀...</p>
                 <button
                   onClick={handleNextPhase}
                   className="px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl text-white font-semibold flex items-center gap-2 hover:from-orange-500 hover:to-red-500 transition-all shadow-[0_0_20px_rgba(239,68,68,0.4)]"
                 >
-                  <AlertTriangle size={18} /> 進入命運的第 {params.blackSwanDay} 天 (黑天鵝降臨)
+                  <AlertTriangle size={18} /> 黑天鵝發生 (第 {params.blackSwanDay} 天)
                 </button>
               </div>
             )}
@@ -148,9 +147,9 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h3 className="text-xl font-light text-red-400">階段二：黑天鵝降臨 (Day {params.blackSwanDay})</h3>
             <p className="text-slate-300 font-light leading-relaxed">
-              就在第 {params.blackSwanDay} 天，市場爆發突發性恐慌，VIX 指數單日暴漲 {params.blackSwanSpike}%！<br/><br/>
+              就在第 {params.blackSwanDay} 天，市場爆發突發性恐慌，VIX 指數單日暴漲 {params.blackSwanSpike}%<br/><br/>
               <span className="text-red-400 font-medium">傳統 ETN：</span> 單日虧損達到了 100%，觸發加速清算條款，資產瞬間歸零。<br/>
-              <span className="text-teal-400 font-medium">創新避險 ETN：</span> 系統性買入的極度價外買權啟動了 Gamma 賠付保護網，成功彌補了期貨端帶來的毀滅性虧損，雖然受傷但成功保全了本金！
+              <span className="text-teal-400 font-medium">創新避險 ETN：</span> 系統性買入的極度價外買權啟動，成功彌補了期貨端價值的大幅下跌，雖小幅虧損但成功保全了本金。
             </p>
             {!isPlaying && currentDay === targetDay && (
               <div className="pt-4 border-t border-white/10 mt-4">
@@ -169,7 +168,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h3 className="text-xl font-light text-teal-300">階段三：災後復甦 (Day {params.blackSwanDay + 1} - 結尾)</h3>
             <p className="text-slate-300 font-light leading-relaxed">
-              恐慌情緒逐漸消退，VIX 再次回落至歷史均值。但對於<span className="text-red-400 font-medium">傳統 ETN</span> 而言，歸零的淨值已經永遠無法起死回生（無限尾部風險的代價）。<br/><br/>
+              恐慌情緒逐漸消退，VIX 再次回落至歷史均值。但對於<span className="text-red-400 font-medium">傳統 ETN</span> 而言，歸零的淨值已經永遠無法起死回生。<br/><br/>
               相反地，<span className="text-teal-400 font-medium">創新避險 ETN</span> 憑藉著成功度過危機的本金，再次開始享受做空波動率的穩定利潤，證明了長期穩健量化避險策略的價值。
             </p>
             {!isPlaying && currentDay === targetDay && (
@@ -310,7 +309,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
               onChange={(e) => setEnableAlt(e.target.checked)}
               className="w-4 h-4 rounded accent-yellow-500 bg-slate-800 border-slate-700"
             />
-            啟用動態假設 (What-If)
+            更改假設:
           </label>
           
           <div className={`flex items-center gap-4 transition-opacity ${enableAlt ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
