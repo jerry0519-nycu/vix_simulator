@@ -49,7 +49,7 @@ function calcMarketContango(currentVix: number, baseContango: number): number {
   }
 }
 
-// ── 核心模擬引擎（全天候雙引擎動態避險系統） ──
+// ── 核心模擬引擎（全天候雙引擎動態避險系統 - 槓桿連動定價版） ──
 export function useSimulation(params: SimulationParams, shocks: number[]) {
   const data = useMemo(() => {
     const result: DailyData[] = [];
@@ -58,6 +58,7 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
     let innNav = 100;
 
     const activeShocks = shocks.length > 0 ? shocks : [0];
+    const absLev = Math.abs(params.leverage);
 
     for (let day = 0; day <= params.tradingDays; day++) {
       if (day === 0) {
@@ -71,7 +72,7 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       // 步驟 1：VIX 價格變化（OU 均值回歸）
       // ══════════════════════════════════════════════
       let vixReturn = 0;
-      const safeVix = Math.max(currentVix, 0.1); // 防止除以零
+      const safeVix = Math.max(currentVix, 0.1); 
 
       if (day === params.blackSwanDay) {
         vixReturn = params.blackSwanSpike / 100;
@@ -79,12 +80,9 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
         const z0 = activeShocks[day % activeShocks.length];
         const kappa = 0.05;
         const longTermMean = Number(params.initialVix);
-        // OU 漂移項：kappa * (均值 - 當前值)
         const drift = kappa * (longTermMean - safeVix) / safeVix;
         vixReturn = drift + z0 * (params.dailyVol / 100);
       }
-      
-      // 更新 VIX 並限制最小值為 5 (現實中 VIX 極少低於 9)
       currentVix = Math.max(currentVix * (1 + vixReturn), 5);
 
       // ══════════════════════════════════════════════
@@ -94,7 +92,7 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       const actualRollYield = marketContango * (-Math.sign(params.leverage));
 
       // ══════════════════════════════════════════════
-      // 步驟 3：傳統 ETN 淨值（不含任何保護機制）
+      // 步驟 3：傳統 ETN 淨值
       // ══════════════════════════════════════════════
       if (tradNav > 0) {
         const tradReturn = (vixReturn * params.leverage) + actualRollYield;
@@ -107,47 +105,43 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       }
 
       // ══════════════════════════════════════════════
-      // 步驟 4：創新 ETN 淨值（雙引擎動態避險）
+      // 步驟 4：創新 ETN 淨值（槓桿連動定價）
       // ══════════════════════════════════════════════
       if (innNav > 0) {
         let innReturn = 0;
 
         if (params.leverage < 0) {
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 模組 A：階梯式尾部防禦引擎 (做空模式)
+          // 模組 A：槓桿連動尾部防禦 (Short)
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 動態保費：VIX 越高 → 選擇權隱含波動率越高 → 保費越貴
-          const dynamicPremium = (params.tailRiskPremium / 100) * (currentVix / 20) / 252;
+          // 保費與槓桿掛鉤：風險越高，保費規模越大
+          const dynamicPremium = (params.tailRiskPremium / 100) * (currentVix / 20) * absLev / 252;
           innReturn = (vixReturn * params.leverage) + actualRollYield - dynamicPremium;
 
-          // 階梯式 Gamma 賠付（VIX 暴漲時選擇權啟動）
+          // 階梯式賠付也乘上槓桿倍數，確保高槓桿下也能覆蓋虧損
           const absVixReturn = Math.abs(vixReturn);
           if (vixReturn > 0.30) {
             if (absVixReturn <= 0.50) {
-              // 第一層：輕度異常 (30%~50%)
-              innReturn += absVixReturn * 0.3;
+              innReturn += absVixReturn * 0.3 * absLev;
             } else if (absVixReturn <= 0.80) {
-              // 第二層：嚴重異常 (50%~80%)
-              innReturn += absVixReturn * 0.6;
+              innReturn += absVixReturn * 0.6 * absLev;
             } else {
-              // 第三層：極端黑天鵝 (>80%)
-              innReturn += absVixReturn * 1.0;
+              innReturn += absVixReturn * 1.0 * absLev;
             }
           }
 
         } else if (params.leverage > 0) {
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 模組 B：掩護性買權補血引擎 (做多模式)
+          // 模組 B：槓桿連動掩護性買權 (Long)
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          // 動態收租：VIX 越高 → 選擇權權利金越貴 → 收租越多
-          const dynamicYield = (params.coveredCallYield / 100) * (currentVix / 20) / 252;
+          // 收租規模隨槓桿放大
+          const dynamicYield = (params.coveredCallYield / 100) * (currentVix / 20) * absLev / 252;
 
-          // 上檔封頂：因為賣出了買權，極端上漲的利潤被讓渡
+          // 上檔封頂維持 30%（代表放棄超過此幅度的 VIX 上漲利潤）
           const cappedVixReturn = Math.min(vixReturn, 0.30);
           innReturn = (cappedVixReturn * params.leverage) + actualRollYield + dynamicYield;
 
         } else {
-          // leverage === 0：無槓桿，創新與傳統相同
           innReturn = actualRollYield;
         }
 
@@ -165,7 +159,6 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
     return result;
   }, [params, shocks]);
 
-  // ── 統計指標 ──
   const stats = useMemo(() => {
     if (data.length === 0) return null;
     const finalTradNav = data[data.length - 1].tradNav;

@@ -4,12 +4,17 @@ import React, { useState, useEffect, useMemo } from "react";
 import { SimulationParams, DailyData, useSimulation } from "@/hooks/useSimulation";
 import { GlassCard } from "./ui/GlassCard";
 import { StoryChart } from "./charts/StoryChart";
-import { Play, Pause, ChevronRight, RotateCcw, AlertTriangle, Settings2, ShieldCheck, Zap } from "lucide-react";
+import { Play, Pause, ChevronRight, RotateCcw, AlertTriangle, Settings2, ChevronDown, ChevronUp } from "lucide-react";
 
 type StoryModeProps = {
-  data: DailyData[]; // 這是從外層傳入的傳統數據 (leverage 取決於 params)
+  data: DailyData[];
   params: SimulationParams;
   shocks: number[];
+};
+
+export type ExtendedDailyData = DailyData & {
+  altTradNav?: number;
+  altInnNav?: number;
 };
 
 export function StoryMode({ data, params, shocks }: StoryModeProps) {
@@ -17,21 +22,23 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [phase, setPhase] = useState<0 | 1 | 2 | 3>(0);
+  const [showMath, setShowMath] = useState(false);
 
-  // 控制哪些線條要顯示
-  const [showTrad, setShowTrad] = useState(true);
-  const [showInnNeg1, setShowInnNeg1] = useState(true); // 預設勾選 -1x
-  const [showInnPos1, setShowInnPos1] = useState(false);
+  // 控制哪些線條顯示
+  const [showTrad, setShowTrad] = useState(false); // 預設不勾選
+  const [showInn, setShowInn] = useState(true);   // 預設勾選 (創新 -1x)
+  const [showAlt, setShowAlt] = useState(false);  // 預設不勾選 (創新 +1x)
 
-  // 1. 強制生成 -1x 創新的數據
-  const paramsNeg1 = useMemo(() => ({ ...params, leverage: -1.0 }), [params]);
-  const { data: dataNeg1 } = useSimulation(paramsNeg1, shocks);
+  // 對照組參數：預設為與主參數相反的槓桿
+  const altParams = useMemo(() => ({
+    ...params,
+    leverage: params.leverage < 0 ? 1.0 : -1.0, // 如果主選單是 -1, 這裡就是 +1
+  }), [params]);
 
-  // 2. 強制生成 +1x 創新的數據
-  const paramsPos1 = useMemo(() => ({ ...params, leverage: 1.0 }), [params]);
-  const { data: dataPos1 } = useSimulation(paramsPos1, shocks);
+  const { data: rawAltData } = useSimulation(altParams, shocks);
 
-  // 決定當前階段的終點天數
+  const isShort = params.leverage < 0;
+
   const targetDay = useMemo(() => {
     if (phase === 0) return 0;
     if (phase === 1) return params.blackSwanDay - 1;
@@ -39,7 +46,6 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
     return params.tradingDays;
   }, [phase, params.blackSwanDay, params.tradingDays]);
 
-  // 動畫計時器
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && !isPaused) {
@@ -57,21 +63,6 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
     return () => clearInterval(interval);
   }, [isPlaying, isPaused, targetDay, phase, params.tradingDays]);
 
-  // 合併並裁切數據給圖表
-  const chartData = useMemo(() => {
-    const slice = [];
-    for (let i = 0; i <= currentDay; i++) {
-      slice.push({
-        day: data[i]?.day,
-        vix: data[i]?.vix,
-        tradNav: data[i]?.tradNav, // 傳統線
-        innNeg1: dataNeg1[i]?.innNav, // -1x 創新線
-        innPos1: dataPos1[i]?.innNav, // +1x 創新線
-      });
-    }
-    return slice;
-  }, [data, dataNeg1, dataPos1, currentDay]);
-
   const handleNextPhase = () => {
     setPhase((p) => Math.min(p + 1, 3) as any);
     setIsPlaying(true);
@@ -85,128 +76,146 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
     setIsPaused(false);
   };
 
+  const slicedData = useMemo(() => {
+    const slice: ExtendedDailyData[] = [];
+    for (let i = 0; i <= currentDay; i++) {
+      const baseObj = data[i];
+      if (!baseObj) continue;
+      const merged: ExtendedDailyData = { ...baseObj };
+      if (rawAltData[i]) {
+        merged.altInnNav = rawAltData[i].innNav;
+      }
+      slice.push(merged);
+    }
+    return slice;
+  }, [data, rawAltData, currentDay]);
+
+  const renderNarrative = () => {
+    switch (phase) {
+      case 0:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-slate-100">模擬情境啟動</h3>
+            <p className="text-slate-400 font-light text-sm leading-relaxed">
+              點擊下方按鈕開始模擬這段金融旅程。我們將同步觀察不同策略在極端市場下的存續表現。
+            </p>
+            <button onClick={handleNextPhase} className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-bold transition-all flex items-center justify-center gap-2">
+              <Play size={20} /> 展開展演
+            </button>
+          </div>
+        );
+      case 1:
+        return (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+            <h3 className="text-xl font-bold text-blue-400">階段一：平靜期的耗損</h3>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              觀察 <span className="text-teal-400">創新 -1x</span> 提撥保費後的緩步成長，以及 <span className="text-emerald-400">創新 +1x</span> 靠著收租補貼減緩正價差的慢性自殺。
+            </p>
+            {!isPlaying && currentDay === targetDay && (
+              <button onClick={handleNextPhase} className="w-full py-4 bg-red-600 hover:bg-red-500 rounded-xl text-white font-bold flex items-center justify-center gap-2">
+                <AlertTriangle size={20} /> 發生黑天鵝
+              </button>
+            )}
+          </div>
+        );
+      case 2:
+        return (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+            <h3 className="text-xl font-bold text-red-500">階段二：極端暴漲與生存</h3>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              VIX 暴漲！傳統型瞬間清算。<br/>
+              <span className="text-teal-400 font-bold">創新 -1x：</span> 保護傘啟動，阻止歸零。<br/>
+              <span className="text-emerald-400 font-bold">創新 +1x：</span> 獲利亮眼，但受限於 30% 封頂。
+            </p>
+            {!isPlaying && currentDay === targetDay && (
+              <button onClick={handleNextPhase} className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-bold flex items-center justify-center gap-2">
+                下一步
+              </button>
+            )}
+          </div>
+        );
+      case 3:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-teal-400">階段三：模擬總結</h3>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              在雙引擎系統下，無論槓桿方向如何，創新型產品都展現了更強的長期存續能力與風險調整後報酬。
+            </p>
+            <button onClick={handleReset} className="w-full py-4 bg-slate-700 hover:bg-slate-600 rounded-xl text-white font-bold flex items-center justify-center gap-2">
+              <RotateCcw size={20} /> 重頭開始
+            </button>
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="flex flex-col space-y-4 h-full max-h-[calc(100vh-220px)]">
-      {/* 頂部三路控制面板 */}
-      <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] p-3 rounded-xl shrink-0">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* 緊湊型參數摘要 */}
+      <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.05] p-2 px-4 rounded-xl mb-4 shrink-0">
         <div className="flex items-center gap-6">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest border-r border-white/10 pr-4">數據對照選擇</span>
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <input type="checkbox" checked={showTrad} onChange={e=>setShowTrad(e.target.checked)} className="w-4 h-4 accent-red-500" />
-            <span className="text-sm text-slate-300 group-hover:text-red-400 transition-colors">傳統 ETN ({params.leverage}x)</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <input type="checkbox" checked={showInnNeg1} onChange={e=>setShowInnNeg1(e.target.checked)} className="w-4 h-4 accent-purple-500" />
-            <span className="text-sm text-slate-300 group-hover:text-purple-400 transition-colors flex items-center gap-1">
-               <ShieldCheck size={14} className="text-purple-400"/> 創新避險型 (-1x)
-            </span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <input type="checkbox" checked={showInnPos1} onChange={e=>setShowInnPos1(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
-            <span className="text-sm text-slate-300 group-hover:text-emerald-400 transition-colors flex items-center gap-1">
-               <Zap size={14} className="text-emerald-400"/> 創新補血型 (+1x)
-            </span>
-          </label>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" checked={showTrad} onChange={e=>setShowTrad(e.target.checked)} className="accent-red-500" />
+              傳統型 (Benchmark)
+            </label>
+            <label className="flex items-center gap-2 text-xs text-teal-400 cursor-pointer">
+              <input type="checkbox" checked={showInn} onChange={e=>setShowInn(e.target.checked)} className="accent-teal-500" />
+              創新反向 (-1x)
+            </label>
+            <label className="flex items-center gap-2 text-xs text-emerald-400 cursor-pointer">
+              <input type="checkbox" checked={showAlt} onChange={e=>setShowAlt(e.target.checked)} className="accent-emerald-500" />
+              創新正向 (+1x)
+            </label>
+          </div>
+          <div className="h-4 w-[1px] bg-white/10" />
+          <div className="text-[10px] text-slate-500 font-mono flex gap-3">
+            <span>START VIX: {params.initialVix}</span>
+            <span>CONTANGO: {params.baseContango}%</span>
+            <span>DAY: {currentDay} / {params.tradingDays}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-slate-500 font-mono">
-           <span>DAY: {currentDay}</span>
-           <span className="px-2 py-0.5 bg-white/5 rounded">PHASE {phase}</span>
-        </div>
+        <button onClick={() => setShowMath(!showMath)} className="text-[10px] text-purple-400 flex items-center gap-1 uppercase tracking-widest">
+          {showMath ? "Hide Logic" : "Show Logic"} <Settings2 size={12} />
+        </button>
       </div>
 
-      {/* 主展演區域 */}
-      <div className="flex-1 flex gap-4 min-h-0">
-        {/* 左側：敘述文字 (寬度縮小，高度固定) */}
-        <div className="w-[320px] flex flex-col gap-4">
-          <GlassCard className="flex-1 border-l-4 border-l-purple-500 flex flex-col justify-between overflow-y-auto custom-scrollbar p-5">
-            <div className="space-y-4">
-               {phase === 0 && (
-                 <div className="animate-in fade-in">
-                    <h3 className="text-lg font-bold text-white mb-2">多維度對照展演</h3>
-                    <p className="text-sm text-slate-400 leading-relaxed">
-                      本動畫將同時展示「傳統」與「全天候雙引擎」在不同槓桿方向下的表現。
-                      您可以隨時切換上方勾選項來對比不同策略的生存曲線。
-                    </p>
-                    <button onClick={handleNextPhase} className="mt-6 w-full py-3 bg-indigo-600 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:bg-indigo-500 transition-all">
-                      <Play size={18} /> 開始演示
-                    </button>
-                 </div>
-               )}
-               {phase === 1 && (
-                 <div className="animate-in fade-in">
-                    <h3 className="text-lg font-bold text-blue-400 mb-2">階段一：平靜期的差異</h3>
-                    <p className="text-sm text-slate-300 leading-relaxed">
-                      注意 <span className="text-emerald-400">創新補血型(+1x)</span> 如何透過收租跑贏傳統。
-                      而 <span className="text-purple-400">創新避險型(-1x)</span> 則在為未來買保險而稍落後。
-                    </p>
-                    {!isPlaying && currentDay === targetDay && (
-                      <button onClick={handleNextPhase} className="mt-6 w-full py-3 bg-red-600 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:bg-red-500 transition-all">
-                        <AlertTriangle size={18} /> 爆發黑天鵝
-                      </button>
-                    )}
-                 </div>
-               )}
-               {phase === 2 && (
-                 <div className="animate-in fade-in">
-                    <h3 className="text-lg font-bold text-red-500 mb-2">階段二：極端衝擊</h3>
-                    <p className="text-sm text-slate-300 leading-relaxed">
-                      VIX 暴漲！傳統型與做多型劇烈波動。
-                      觀察 <span className="text-purple-400">創新避險型</span> 如何在歸零邊緣被 Gamma 賠付拉回，保全本金。
-                    </p>
-                    {!isPlaying && currentDay === targetDay && (
-                      <button onClick={handleNextPhase} className="mt-6 w-full py-3 bg-teal-600 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:bg-teal-500 transition-all">
-                        <ChevronRight size={18} /> 觀察長期結果
-                      </button>
-                    )}
-                 </div>
-               )}
-               {phase === 3 && (
-                 <div className="animate-in fade-in">
-                    <h3 className="text-lg font-bold text-teal-400 mb-2">階段三：結語</h3>
-                    <p className="text-sm text-slate-300 leading-relaxed">
-                      長期來看，具備動態引擎的商品能適應更多樣的市場環境，無論是防止爆倉還是緩解耗損。
-                    </p>
-                    <button onClick={handleReset} className="mt-6 w-full py-3 bg-slate-700 rounded-xl text-white font-bold flex items-center justify-center gap-2">
-                      <RotateCcw size={18} /> 重新開始
-                    </button>
-                 </div>
-               )}
-            </div>
+      {showMath && (
+        <div className="mb-4 p-3 bg-indigo-900/20 border border-indigo-500/30 rounded-lg text-[11px] text-slate-300 animate-in fade-in slide-in-from-top-1">
+          <strong>槓桿連動定價邏輯：</strong> 保費與賠付比率均依據 |Leverage| 進行等比例縮放。-2.0x 槓桿將獲得 2.0x 的 Gamma 保護。
+        </div>
+      )}
 
-            <div className="mt-6">
-               <div className="flex justify-between items-center text-[10px] text-slate-600 mb-2 uppercase tracking-tighter">
-                  <span>Progress</span>
-                  <span>{Math.round((currentDay/params.tradingDays)*100)}%</span>
-               </div>
-               <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500 transition-all duration-100" style={{ width: `${(currentDay/params.tradingDays)*100}%` }} />
-               </div>
-               {isPlaying && (
-                 <button onClick={() => setIsPaused(!isPaused)} className="mt-3 w-full py-1.5 rounded bg-white/5 text-[11px] text-slate-400 border border-white/10 hover:bg-white/10 transition-all">
-                   {isPaused ? "RESUME" : "PAUSE"}
-                 </button>
-               )}
+      {/* 主展演區：拉長高度 */}
+      <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
+        <div className="col-span-1 flex flex-col gap-4">
+          <GlassCard className="flex-1 flex flex-col justify-center p-6 border-l-4 border-l-purple-500">
+            {renderNarrative()}
+            <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+              <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-purple-500 transition-all duration-100" style={{ width: `${(currentDay / params.tradingDays) * 100}%` }}></div>
+              </div>
+              {isPlaying && (
+                <button onClick={togglePause} className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] uppercase tracking-widest text-slate-400 hover:text-white transition-all">
+                  {isPaused ? "RESUME" : "PAUSE"}
+                </button>
+              )}
             </div>
           </GlassCard>
         </div>
 
-        {/* 右側：圖表區域 (寬度最大化) */}
-        <div className="flex-1 h-full min-h-0">
-          <GlassCard className="h-full p-4 relative flex flex-col">
-            <div className="absolute top-4 right-6 flex gap-4 z-10">
-               {showTrad && <div className="flex items-center gap-2 text-[10px] text-red-400 font-bold"><span className="w-4 h-0.5 bg-red-400 border-t border-dashed"></span> TRADITIONAL</div>}
-               {showInnNeg1 && <div className="flex items-center gap-2 text-[10px] text-purple-400 font-bold"><span className="w-4 h-1 bg-purple-400"></span> INN -1x (SHIELD)</div>}
-               {showInnPos1 && <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-bold"><span className="w-4 h-1 bg-emerald-400"></span> INN +1x (BOOST)</div>}
-            </div>
-            <div className="flex-1 mt-4">
-               <StoryChart 
-                 data={chartData as any} 
-                 maxDays={params.tradingDays}
-                 showTrad={showTrad}
-                 showInnNeg1={showInnNeg1}
-                 showInnPos1={showInnPos1}
-               />
-            </div>
+        <div className="col-span-3">
+          <GlassCard className="h-full p-4 relative overflow-hidden">
+            <StoryChart
+              data={slicedData as any}
+              maxDays={params.tradingDays}
+              showTrad={showTrad}
+              showInn={showInn}
+              showAlt={showAlt}
+              isZoomed={false}
+              zoomMin={''}
+              zoomMax={''}
+            />
           </GlassCard>
         </div>
       </div>
