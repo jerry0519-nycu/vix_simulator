@@ -26,7 +26,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomMin, setZoomMin] = useState<number | ''>('');
   const [zoomMax, setZoomMax] = useState<number | ''>('');
-  
+
   const [showTrad, setShowTrad] = useState(true);
   const [showInn, setShowInn] = useState(true);
 
@@ -41,15 +41,15 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
     leverage: altLeverage,
     baseContango: altBaseContango
   }), [params, altLeverage, altBaseContango]);
-  
+
   const { data: rawAltData } = useSimulation(altParams, shocks);
 
   // Determine target day for the current phase
   const targetDay = useMemo(() => {
     if (phase === 0) return 0;
-    if (phase === 1) return params.blackSwanDay - 1; // Pause right before black swan
-    if (phase === 2) return params.blackSwanDay;     // The exact black swan day
-    return params.tradingDays;                       // The end
+    if (phase === 1) return params.blackSwanDay - 1;
+    if (phase === 2) return params.blackSwanDay;
+    return params.tradingDays;
   }, [phase, params.blackSwanDay, params.tradingDays]);
 
   useEffect(() => {
@@ -61,11 +61,10 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
             setIsPlaying(false);
             return prev;
           }
-          // Animation speed adjustment: phase 2 (single day) is instant, others are smooth
           const step = phase === 2 ? 1 : Math.max(1, Math.floor(params.tradingDays / 100));
           return Math.min(prev + step, targetDay);
         });
-      }, 30); // 30ms for smooth 30fps animation
+      }, 30);
     }
     return () => clearInterval(interval);
   }, [isPlaying, isPaused, targetDay, phase, params.tradingDays]);
@@ -93,7 +92,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
     for (let i = 0; i <= currentDay; i++) {
       const baseObj = data[i];
       if (!baseObj) continue;
-      
+
       const merged: ExtendedDailyData = { ...baseObj };
       if (enableAlt && rawAltData[i]) {
         merged.altTradNav = rawAltData[i].tradNav;
@@ -188,7 +187,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
 
   return (
     <div className="flex flex-col space-y-6 h-full pb-8 pr-2 custom-scrollbar">
-      
+
       {/* Parameters Summary Badge & Math Explanation */}
       <div className="flex flex-col gap-2 bg-white/[0.02] border border-white/[0.05] p-3 rounded-xl shadow-inner shrink-0">
         <div className="flex items-center justify-between">
@@ -200,7 +199,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
               (註：此為本展演之固定環境變數，將決定下方 VIX 軌跡與基準 ETN 走勢)
             </span>
           </div>
-          <button 
+          <button
             onClick={() => setShowMath(!showMath)}
             className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors px-2 py-1 rounded bg-purple-900/20"
           >
@@ -215,7 +214,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
           <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-red-300/80 border border-red-900/30">槓桿倍數: {params.leverage}x</span>
           <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-orange-300/80 border border-orange-900/30">黑天鵝暴漲: {params.blackSwanSpike}%</span>
         </div>
-        
+
         {/* Collapsible Math Panel */}
         {showMath && (
           <div className="mt-3 p-4 bg-black/40 border border-purple-500/20 rounded-lg text-[13px] text-slate-300 font-light animate-in fade-in slide-in-from-top-2">
@@ -248,13 +247,13 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
         )}
       </div>
 
-      {/* Global Controls Panel (Moved out of grid to align left and right panels) */}
+      {/* Global Controls Panel */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white/[0.02] border border-white/[0.05] p-3 rounded-xl shadow-inner shrink-0">
         <div className="flex flex-wrap gap-4">
           <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white transition-colors">
-            <input 
-              type="checkbox" 
-              checked={showTrad} 
+            <input
+              type="checkbox"
+              checked={showTrad}
               onChange={(e) => setShowTrad(e.target.checked)}
               className="w-4 h-4 rounded accent-red-400 bg-slate-800 border-slate-700"
             />
@@ -262,23 +261,23 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
             顯示基準傳統 ETN
           </label>
           <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white transition-colors">
-            <input 
-              type="checkbox" 
-              checked={showInn} 
+            <input
+              type="checkbox"
+              checked={showInn}
               onChange={(e) => setShowInn(e.target.checked)}
               className="w-4 h-4 rounded accent-teal-400 bg-slate-800 border-slate-700"
             />
             <span className="w-2 h-2 rounded-full bg-teal-400"></span>
             顯示基準創新 ETN
           </label>
-          
+
           <div className="h-4 w-px bg-slate-700 hidden sm:block mx-2"></div>
-          
+
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer text-sm text-purple-300 hover:text-white transition-colors">
-              <input 
-                type="checkbox" 
-                checked={isZoomed} 
+              <input
+                type="checkbox"
+                checked={isZoomed}
                 onChange={(e) => setIsZoomed(e.target.checked)}
                 className="w-4 h-4 rounded accent-purple-500 bg-slate-800 border-slate-700"
               />
@@ -307,23 +306,23 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
             )}
           </div>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-4 xl:gap-6">
           <label className="flex items-center gap-2 cursor-pointer text-sm text-yellow-400 font-medium">
-            <input 
-              type="checkbox" 
-              checked={enableAlt} 
+            <input
+              type="checkbox"
+              checked={enableAlt}
               onChange={(e) => setEnableAlt(e.target.checked)}
               className="w-4 h-4 rounded accent-yellow-500 bg-slate-800 border-slate-700"
             />
             更改假設:
           </label>
-          
+
           <div className={`flex items-center gap-4 transition-opacity ${enableAlt ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
             <div className="flex items-center gap-2">
               <label className="text-xs text-slate-400">假設槓桿倍數:</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 step="0.5"
                 value={altLeverage}
                 onChange={(e) => setAltLeverage(Number(e.target.value))}
@@ -332,8 +331,8 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
             </div>
             <div className="flex items-center gap-2">
               <label className="text-xs text-slate-400">假設正價差(%/天):</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 step="0.01"
                 value={altBaseContango}
                 onChange={(e) => setAltBaseContango(Number(e.target.value))}
@@ -349,16 +348,16 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
         <div className="xl:col-span-1 h-full flex flex-col gap-4 min-h-0">
           <GlassCard className="flex-1 flex flex-col justify-between border-l-4 border-l-purple-500 overflow-y-auto custom-scrollbar">
             {renderNarrative()}
-            
+
             <div className="mt-8 pt-4 border-t border-white/5 shrink-0">
               <div className="flex justify-between items-center text-sm text-slate-400 mb-4">
                 <span>當前進度</span>
                 <span className="font-mono text-purple-300">Day {currentDay} / {params.tradingDays}</span>
               </div>
-              
+
               <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-4">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-teal-500 transition-all duration-100" 
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-teal-500 transition-all duration-100"
                   style={{ width: `${(currentDay / params.tradingDays) * 100}%` }}
                 ></div>
               </div>
@@ -368,8 +367,8 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
                 <button
                   onClick={togglePause}
                   className={`w-full py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all ${
-                    isPaused 
-                      ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30" 
+                    isPaused
+                      ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30"
                       : "bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30"
                   }`}
                 >
@@ -384,9 +383,9 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
         <div className="xl:col-span-3 h-full flex flex-col gap-4 min-h-0">
           <GlassCard className="flex-1 flex flex-col min-h-0 p-2 sm:p-4 pt-4 sm:pt-6">
             <div className="flex-1 min-h-0 w-full relative">
-              <StoryChart 
-                data={slicedData as any} 
-                maxDays={params.tradingDays} 
+              <StoryChart
+                data={slicedData as any}
+                maxDays={params.tradingDays}
                 showTrad={showTrad}
                 showInn={showInn}
                 showAlt={enableAlt}
