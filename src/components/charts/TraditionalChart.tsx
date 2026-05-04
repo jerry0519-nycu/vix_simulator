@@ -36,7 +36,7 @@ export function TraditionalChart({ data }: { data: DailyData[] }) {
             yAxisId="left"
             type="monotone"
             dataKey="tradNav"
-            name="傳統 ETN 淨值 (XIV)"
+            name="傳統 ETN 淨值"
             stroke="#fb7185"
             strokeWidth={3}
             dot={false}

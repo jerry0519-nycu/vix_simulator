@@ -127,7 +127,7 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
           </GlassCard>
 
           <GlassCard>
-            <h4 className="text-lg font-semibold mb-4 text-slate-200">VIX 走勢 vs. ETN 淨值走勢 (XIV)</h4>
+            <h4 className="text-lg font-semibold mb-4 text-slate-200">VIX 走勢 vs. 傳統 ETN 淨值走勢</h4>
             <TraditionalChart data={data} />
           </GlassCard>
 

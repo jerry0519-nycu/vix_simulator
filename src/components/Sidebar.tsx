@@ -58,7 +58,7 @@ export function Sidebar({ params, setParams, onRegenerate }: SidebarProps) {
           </div>
         ))}
       </div>
-      
+
       <button
         onClick={onRegenerate}
         className="mt-8 w-full py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-200 text-sm tracking-widest font-semibold hover:bg-purple-500/30 hover:border-purple-400/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all duration-300 flex items-center justify-center gap-2"
