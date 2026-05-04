@@ -156,6 +156,7 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
                     </p>
                     <p className="text-[10px] text-slate-600 mt-1">收租增益影響</p>
                   </GlassCard>
+                </>
               )}
               
               <GlassCard className="col-span-2 p-6 flex flex-col justify-center">
