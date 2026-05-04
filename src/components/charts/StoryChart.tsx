@@ -51,18 +51,18 @@ export function StoryChart({
             />
             <Legend verticalAlign="top" height={36} iconType="circle" />
             
-            {/* 傳統反向：粉紅虛線 */}
+            {/* 傳統反向：改為實線，較細 */}
             {showTradShort && (
-              <Line yAxisId="left" type="monotone" dataKey="tradShort" name="傳統反向 (-1x)" stroke="#f43f5e" strokeWidth={1} strokeDasharray="4 4" dot={false} isAnimationActive={false} opacity={0.6} />
+              <Line yAxisId="left" type="monotone" dataKey="tradShort" name="傳統反向 (-1x)" stroke="#f43f5e" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.4} />
             )}
             {/* 創新反向：紫色厚實線 */}
             {showInnShort && (
               <Line yAxisId="left" type="monotone" dataKey="innShort" name="創新反向 (-1x)" stroke="#a855f7" strokeWidth={4} dot={false} isAnimationActive={false} />
             )}
             
-            {/* 傳統正向：紅虛線 */}
+            {/* 傳統正向：改為實線，較細 */}
             {showTradLong && (
-              <Line yAxisId="left" type="monotone" dataKey="tradLong" name="傳統正向 (+1x)" stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" dot={false} isAnimationActive={false} opacity={0.6} />
+              <Line yAxisId="left" type="monotone" dataKey="tradLong" name="傳統正向 (+1x)" stroke="#ef4444" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.4} />
             )}
             {/* 創新正向：翡翠厚實線 */}
             {showInnLong && (
@@ -71,13 +71,13 @@ export function StoryChart({
           </LineChart>
         </ResponsiveContainer>
 
-        {/* Bottom Chart: VIX (40% Height - Taller now) */}
+        {/* Bottom Chart: VIX (40% Height) */}
         <ResponsiveContainer width="100%" height="40%">
           <LineChart data={data} syncId="story-sync" margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.02)" />
             <XAxis dataKey="day" type="number" domain={[0, maxDays]} stroke="#475569" tick={{ fill: '#475569', fontSize: 11 }} />
             <YAxis yAxisId="left" stroke="#38bdf8" tick={{ fill: '#38bdf8', fontSize: 11 }} domain={[0, 60]} ticks={[0, 20, 40, 60]} width={yAxisWidth} />
-            <Line yAxisId="left" type="monotone" dataKey="vix" name="VIX 指數" stroke="#38bdf8" strokeWidth={2} dot={false} opacity={0.5} strokeDasharray="2 2" isAnimationActive={false} />
+            <Line yAxisId="left" type="monotone" dataKey="vix" name="VIX 指數" stroke="#38bdf8" strokeWidth={1.5} dot={false} opacity={0.3} isAnimationActive={false} />
             <Tooltip 
               formatter={(value: number) => value.toFixed(2)}
               contentStyle={{ backgroundColor: 'rgba(10, 5, 20, 0.95)', border: '1px solid #0ea5e9', color: '#fff', borderRadius: '12px' }}
