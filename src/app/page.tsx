@@ -13,7 +13,7 @@ export default function Home() {
     tradingDays: 252,
     initialVix: 15,
     dailyVol: 4.0,
-    rollYield: 0.1,
+    baseContango: 0.15,
     leverage: -1.0,
     blackSwanDay: 200,
     blackSwanSpike: 100,

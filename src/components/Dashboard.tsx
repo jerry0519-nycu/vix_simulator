@@ -95,9 +95,9 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/40 to-transparent"></div>
               <h3 className="text-lg font-light tracking-wide mb-3 text-slate-100 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></span>
-                正價差收益
+                動態正價差收益
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-light">此商品平時依靠期貨市場的正價差結構，每日轉倉能賺取穩定的轉倉收益，使淨值在平時呈現穩定向上趨勢。</p>
+              <p className="text-slate-400 text-sm leading-relaxed font-light">VIX 低於 20 時市場處於正價差，做空端每日轉倉賺取溢價 ({params.baseContango}%/天)。VIX 20~30 時正價差逐步收窄；VIX 超過 30 則轉為逆價差，做空端反而因轉倉而虧損。</p>
             </GlassCard>
             <GlassCard className="relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500/40 to-transparent"></div>
@@ -120,9 +120,15 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
           <GlassCard className="!bg-black/40 border-white/[0.02]">
             <h4 className="text-xs tracking-widest uppercase font-semibold text-blue-400/70 mb-3">數學運算邏輯</h4>
             <code className="text-[13px] text-slate-300/80 block font-mono leading-loose">
-              每日報酬 = (VIX 當日變動率 × 槓桿倍數) + 每日轉倉收益率<br/>
-              今日淨值 = 昨日淨值 × (1 + 每日報酬)<br/>
-              <span className="text-red-400/80 mt-1 block text-xs tracking-wide">※ 若單日報酬 ≤ -100%，淨值強制歸零 (Acceleration Clause)</span>
+              <span className="text-blue-300/80">▸ 動態市場價差狀態：</span><br/>
+              　VIX ≤ 20 → 正價差 = 基礎正價差 ({params.baseContango}%/天)<br/>
+              　20 &lt; VIX ≤ 30 → 正價差 = 基礎正價差 × (30 - VIX) / 10<br/>
+              　VIX &gt; 30 → 逆價差 = -0.2% × (VIX - 30)<br/><br/>
+              <span className="text-blue-300/80">▸ 實際轉倉收益 = 市場價差 × (-槓桿方向)</span><br/>
+              　做空 (槓桿&lt;0)：正價差賺、逆價差虧<br/><br/>
+              <span className="text-blue-300/80">▸ 每日報酬 = (VIX 變動率 × 槓桿) + 實際轉倉收益</span><br/>
+              　今日淨值 = 昨日淨值 × (1 + 每日報酬)<br/>
+              <span className="text-red-400/80 mt-1 block text-xs tracking-wide">※ 若單日報酬 ≤ -100%，淨值強制歸零（加速清算條款）</span>
             </code>
           </GlassCard>
 
@@ -184,9 +190,11 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
           <GlassCard className="!bg-black/40 border-white/[0.02]">
             <h4 className="text-xs tracking-widest uppercase font-semibold text-teal-400/70 mb-3">數學運算邏輯</h4>
             <code className="text-[13px] text-slate-300/80 block font-mono leading-loose">
-              平時報酬 = (VIX 變動率 × 槓桿) + [轉倉收益 × (1 - 權利金提撥比例)]<br/>
-              黑天鵝報酬 = 平時報酬 + <span className="text-teal-300/80">選擇權 Gamma 賠付 (VIX 暴漲幅度 × 0.8)</span><br/>
-              今日淨值 = 昨日淨值 × (1 + 當日報酬)
+              <span className="text-teal-300/80">▸ 平時報酬 = (VIX 變動率 × 槓桿) + [實際轉倉收益 × (1 - 權利金提撥 {params.premiumCost}%)]</span><br/>
+              　實際轉倉收益 = 動態市場價差 × (-槓桿方向)<br/><br/>
+              <span className="text-teal-300/80">▸ 黑天鵝觸發條件：VIX 單日暴漲 &gt; 50%</span><br/>
+              　賠付報酬 = 平時報酬 + <span className="text-emerald-300">Gamma 賠付 (VIX 暴漲幅度 × 0.8)</span><br/><br/>
+              　今日淨值 = 昨日淨值 × (1 + 當日報酬)
             </code>
           </GlassCard>
 

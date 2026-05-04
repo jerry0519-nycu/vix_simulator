@@ -33,14 +33,14 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
   // What-If State
   const [enableAlt, setEnableAlt] = useState(false);
   const [altLeverage, setAltLeverage] = useState(params.leverage);
-  const [altRollYield, setAltRollYield] = useState(params.rollYield);
+  const [altBaseContango, setAltBaseContango] = useState(params.baseContango);
 
   // Generate alternative simulation data using exactly the same shocks
   const altParams = useMemo(() => ({
     ...params,
     leverage: altLeverage,
-    rollYield: altRollYield
-  }), [params, altLeverage, altRollYield]);
+    baseContango: altBaseContango
+  }), [params, altLeverage, altBaseContango]);
   
   const { data: rawAltData } = useSimulation(altParams, shocks);
 
@@ -211,31 +211,38 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
         <div className="flex flex-wrap gap-3">
           <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-slate-300 border border-slate-700/50">起始 VIX: {params.initialVix}</span>
           <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-slate-300 border border-slate-700/50">平時日波動: {params.dailyVol}%</span>
-          <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-blue-300/80 border border-blue-900/30">基準轉倉收益: {params.rollYield}%</span>
-          <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-red-300/80 border border-red-900/30">基準槓桿倍數: {params.leverage}x</span>
+          <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-blue-300/80 border border-blue-900/30">基礎正價差: {params.baseContango}%/天</span>
+          <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-red-300/80 border border-red-900/30">槓桿倍數: {params.leverage}x</span>
           <span className="px-3 py-1 bg-slate-800/50 rounded-lg text-xs text-orange-300/80 border border-orange-900/30">黑天鵝暴漲: {params.blackSwanSpike}%</span>
         </div>
         
         {/* Collapsible Math Panel */}
         {showMath && (
           <div className="mt-3 p-4 bg-black/40 border border-purple-500/20 rounded-lg text-[13px] text-slate-300 font-light animate-in fade-in slide-in-from-top-2">
-            <p className="mb-2"><strong className="text-slate-100 font-medium">1. VIX 指數生成 (OU 均值回歸模型)</strong></p>
+            <p className="mb-2"><strong className="text-slate-100 font-medium">1. VIX 指數生成（均值回歸模型）</strong></p>
             <ul className="list-disc pl-5 mb-4 space-y-1 text-slate-400">
-              <li>每日 VIX 變動率 = [均值拉力 (預設均值=起始 VIX)] + [隨機常態分配亂數 × <span className="text-slate-200">平時日波動 ({params.dailyVol}%)</span>]</li>
-              <li>這確保了 VIX 就像一根彈簧，平時會在 15 上下震盪，不會無止盡地飆升。</li>
+              <li>每日 VIX 變動率 = [均值拉力 (預設均值=起始 VIX)] + [隨機常態亂數 × <span className="text-slate-200">平時日波動 ({params.dailyVol}%)</span>]</li>
+              <li>VIX 就像一根彈簧，平時會在 {params.initialVix} 上下震盪，不會無止盡地飆升。</li>
             </ul>
 
-            <p className="mb-2"><strong className="text-slate-100 font-medium">2. ETN 淨值計算 (起始點與每日重平衡)</strong></p>
+            <p className="mb-2"><strong className="text-slate-100 font-medium">2. 動態轉倉收益計算</strong></p>
             <ul className="list-disc pl-5 mb-4 space-y-1 text-slate-400">
-              <li><strong className="text-slate-200 font-medium">為什麼起始淨值是 100？</strong> 就像大盤指數設定基期一樣，ETN 發行時會設定一個初始的「淨資產價值 (NAV)」，本系統統一預設為 $100 作為計算基準。</li>
-              <li>傳統 ETN 每日報酬率 = (VIX 當日變動率 × <span className="text-red-300">基準槓桿倍數 {params.leverage}x</span>) + <span className="text-blue-300">基準轉倉收益 {params.rollYield}%</span></li>
-              <li><strong className="text-slate-200 font-medium">第一天計算範例：</strong> 假設今天 VIX 從 15 跌到了 14.7 (VIX變動率 -2%)。傳統 ETN 當日報酬率 = (-2% × -1) + 0.1% = 2.1%。因此第一天收盤的淨值就會是：$100 × (1 + 2.1%) = <strong className="text-emerald-400">$102.1</strong>。</li>
+              <li>VIX ≤ 20：市場價差 = 基礎正價差 (<span className="text-blue-300">{params.baseContango}%/天</span>)，做空端轉倉賺取溢價</li>
+              <li>20 &lt; VIX ≤ 30：正價差線性遞減至零，轉倉收益逐步消失</li>
+              <li>VIX &gt; 30：進入逆價差區間，做空端每日因轉倉而額外虧損，造成「暴漲 + 逆價差」的雙重打擊</li>
+              <li>實際轉倉收益 = 市場價差 × (-槓桿方向)，做空時正價差賺、逆價差虧</li>
             </ul>
 
-            <p className="mb-2"><strong className="text-slate-100 font-medium">3. 創新避險 ETN 的風險控制 (Gamma 保護網)</strong></p>
+            <p className="mb-2"><strong className="text-slate-100 font-medium">3. ETN 淨值計算（起始 $100、每日重平衡）</strong></p>
+            <ul className="list-disc pl-5 mb-4 space-y-1 text-slate-400">
+              <li>傳統 ETN 每日報酬 = (VIX 變動率 × <span className="text-red-300">槓桿 {params.leverage}x</span>) + <span className="text-blue-300">實際轉倉收益</span></li>
+              <li><strong className="text-slate-200 font-medium">第一天計算範例：</strong> 假設 VIX 從 15 跌到 14.7 (變動率 -2%)，此時 VIX=14.7 &lt; 20，市場價差={params.baseContango}%。實際轉倉收益={params.baseContango}% × 1 = {params.baseContango}%。傳統 ETN 報酬 = (-2% × -1) + {params.baseContango}% = {(2 + params.baseContango).toFixed(2)}%。淨值 = $100 × (1 + {(2 + params.baseContango).toFixed(2)}%) = <strong className="text-emerald-400">${(100 * (1 + (2 + params.baseContango) / 100)).toFixed(2)}</strong></li>
+            </ul>
+
+            <p className="mb-2"><strong className="text-slate-100 font-medium">4. 創新避險 ETN 的風險控制</strong></p>
             <ul className="list-disc pl-5 space-y-1 text-slate-400">
-              <li>平時每日報酬率會扣除 <span className="text-teal-300">轉倉收益提撥比例 ({params.premiumCost}%)</span> 去買保護，因此平時獲利會比傳統型稍微落後。</li>
-              <li><strong>黑天鵝事件：</strong> 當 VIX 瞬間暴漲 (如 {params.blackSwanSpike}%)，傳統 ETN 單日虧損超過 100% 觸發強制歸零。但創新 ETN 會觸發選擇權的「Gamma 巨幅賠付」，獲得額外補償來保全本金。</li>
+              <li>平時每日報酬率會將轉倉收益扣除 <span className="text-teal-300">權利金提撥比例 ({params.premiumCost}%)</span> 去買保護，因此平時獲利會比傳統型稍微落後。</li>
+              <li><strong>黑天鵝事件：</strong> 當 VIX 單日暴漲超過 50% 時，傳統 ETN 單日虧損超過 100% 觸發強制歸零，但創新 ETN 會觸發「巨幅賠付」，獲得額外補償來保全本金。</li>
             </ul>
           </div>
         )}
@@ -324,12 +331,12 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
               />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs text-slate-400">假設轉倉收益(%):</label>
+              <label className="text-xs text-slate-400">假設正價差(%/天):</label>
               <input 
                 type="number" 
-                step="0.05"
-                value={altRollYield}
-                onChange={(e) => setAltRollYield(Number(e.target.value))}
+                step="0.01"
+                value={altBaseContango}
+                onChange={(e) => setAltBaseContango(Number(e.target.value))}
                 className="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:border-yellow-500/50"
               />
             </div>
