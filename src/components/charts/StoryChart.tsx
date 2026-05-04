@@ -19,6 +19,7 @@ type StoryChartProps = {
   showTradLong: boolean;
   showInnShort: boolean;
   showInnLong: boolean;
+  isZoomed?: boolean;
 };
 
 export function StoryChart({ 
@@ -27,7 +28,8 @@ export function StoryChart({
   showTradShort, 
   showTradLong, 
   showInnShort, 
-  showInnLong 
+  showInnLong,
+  isZoomed = false
 }: StoryChartProps) {
   const yAxisWidth = 50;
 
@@ -42,8 +44,9 @@ export function StoryChart({
             <YAxis 
               yAxisId="left" stroke="#64748b" 
               tick={{ fill: '#64748b', fontSize: 12 }} 
-              domain={[0, 'auto']} 
+              domain={isZoomed ? ['auto', 'auto'] : [0, 'auto']} 
               width={yAxisWidth}
+              allowDataOverflow={true}
             />
             <Tooltip 
               formatter={(value: number) => value.toFixed(2)}
@@ -51,22 +54,18 @@ export function StoryChart({
             />
             <Legend verticalAlign="top" height={36} iconType="circle" />
             
-            {/* 傳統反向：改為實線，較細 */}
             {showTradShort && (
-              <Line yAxisId="left" type="monotone" dataKey="tradShort" name="傳統反向 (-1x)" stroke="#f43f5e" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.4} />
+              <Line yAxisId="left" type="monotone" dataKey="tradShort" name="傳統反向" stroke="#f43f5e" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.4} />
             )}
-            {/* 創新反向：紫色厚實線 */}
             {showInnShort && (
-              <Line yAxisId="left" type="monotone" dataKey="innShort" name="創新反向 (-1x)" stroke="#a855f7" strokeWidth={4} dot={false} isAnimationActive={false} />
+              <Line yAxisId="left" type="monotone" dataKey="innShort" name="創新反向" stroke="#a855f7" strokeWidth={4} dot={false} isAnimationActive={false} />
             )}
             
-            {/* 傳統正向：改為實線，較細 */}
             {showTradLong && (
-              <Line yAxisId="left" type="monotone" dataKey="tradLong" name="傳統正向 (+1x)" stroke="#ef4444" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.4} />
+              <Line yAxisId="left" type="monotone" dataKey="tradLong" name="傳統正向" stroke="#ef4444" strokeWidth={1} dot={false} isAnimationActive={false} opacity={0.4} />
             )}
-            {/* 創新正向：翡翠厚實線 */}
             {showInnLong && (
-              <Line yAxisId="left" type="monotone" dataKey="innLong" name="創新正向 (+1x)" stroke="#10b981" strokeWidth={4} dot={false} isAnimationActive={false} />
+              <Line yAxisId="left" type="monotone" dataKey="innLong" name="創新正向" stroke="#10b981" strokeWidth={4} dot={false} isAnimationActive={false} />
             )}
           </LineChart>
         </ResponsiveContainer>

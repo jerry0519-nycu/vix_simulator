@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { SimulationParams, DailyData, useSimulation } from "@/hooks/useSimulation";
 import { GlassCard } from "./ui/GlassCard";
 import { StoryChart } from "./charts/StoryChart";
-import { Play, Pause, ChevronRight, RotateCcw, AlertTriangle, Settings2 } from "lucide-react";
+import { Play, Pause, ChevronRight, RotateCcw, AlertTriangle, Settings2, ZoomIn, ZoomOut } from "lucide-react";
 
 type StoryModeProps = {
   data: DailyData[];
@@ -17,14 +17,16 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [phase, setPhase] = useState<0 | 1 | 2 | 3>(0);
+  
+  // 縮放狀態
+  const [isZoomed, setIsZoomed] = useState(false);
 
   // 控制四條線路顯示
-  const [showTradShort, setShowTradShort] = useState(true); // 傳統反向
-  const [showTradLong, setShowTradLong] = useState(false); // 傳統正向
-  const [showInnShort, setShowInnShort] = useState(true);  // 創新反向
-  const [showInnLong, setShowInnLong] = useState(false);   // 創新正向
+  const [showTradShort, setShowTradShort] = useState(true);
+  const [showTradLong, setShowTradLong] = useState(false);
+  const [showInnShort, setShowInnShort] = useState(true);
+  const [showInnLong, setShowInnLong] = useState(false);
 
-  // 展演專用參數：固定正負 1 倍槓桿
   const storyParams = useMemo(() => ({ ...params, initialVix: 18 }), [params]);
   const shortParams = useMemo(() => ({ ...storyParams, leverage: -1.0 }), [storyParams]);
   const longParams = useMemo(() => ({ ...storyParams, leverage: 1.0 }), [storyParams]);
@@ -94,24 +96,23 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
       case 0:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-slate-100">模擬啟動</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">準備好對比「傳統 vs 創新」以及「做空 vs 做多」的四象限差異了嗎？</p>
-            <button onClick={handleNextPhase} className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-bold transition-all">
-              開始展演
+            <h3 className="text-xl font-bold text-slate-100 font-light tracking-tighter">模擬準備就緒</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">我們將同步觀測四種策略。點擊開始後，您可以隨時使用右側的縮放功能觀察細節。</p>
+            <button onClick={handleNextPhase} className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-bold transition-all shadow-lg shadow-indigo-500/20">
+              啟動模擬路徑
             </button>
           </div>
         );
       case 1:
         return (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-            <h3 className="text-xl font-bold text-blue-400">階段一：平靜期的差異</h3>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              <span className="text-emerald-400">創新正向</span> 靠收租顯著優於 <span className="text-red-400">傳統正向</span>。<br/>
-              <span className="text-purple-400">創新反向</span> 因保費略遜於 <span className="text-rose-400 text-opacity-60">傳統反向</span>。
+            <h3 className="text-xl font-bold text-blue-400">階段一：低波動盤整</h3>
+            <p className="text-slate-300 text-sm leading-relaxed italic">
+              提示：此時您可以點擊右上角的 <span className="text-white">Zoom</span>，觀察創新正向是如何緩慢拉開與傳統型的差距。
             </p>
             {!isPlaying && currentDay === targetDay && (
               <button onClick={handleNextPhase} className="w-full py-4 bg-red-600 hover:bg-red-500 rounded-xl text-white font-bold">
-                <AlertTriangle size={20} className="inline mr-2" /> 觸發黑天鵝
+                引發極端風險
               </button>
             )}
           </div>
@@ -119,15 +120,13 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
       case 2:
         return (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-            <h3 className="text-xl font-bold text-red-500">階段二：暴漲與存續</h3>
+            <h3 className="text-xl font-bold text-red-500">階段二：黑天鵝降臨</h3>
             <p className="text-slate-300 text-sm leading-relaxed">
-              VIX 暴漲！傳統反向歸零。<br/>
-              <span className="text-purple-400 font-bold">創新反向</span> 成功存活。<br/>
-              <span className="text-emerald-400 font-bold">創新正向</span> 則大幅獲利。
+              VIX 暴漲引發連鎖反應。傳統做空產品面臨清算，而避險引擎在此時發揮決定性作用。
             </p>
             {!isPlaying && currentDay === targetDay && (
               <button onClick={handleNextPhase} className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-bold">
-                下一步
+                查看清算結果
               </button>
             )}
           </div>
@@ -135,12 +134,12 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-teal-400">模擬總結</h3>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              創新引擎為兩類商品都帶來了更好的風險調整後收益。
+            <h3 className="text-xl font-bold text-teal-400">模擬結束</h3>
+            <p className="text-slate-300 text-sm leading-relaxed font-light">
+              通過對稱式的策略組裝，我們實現了全天候的風險控管。
             </p>
             <button onClick={handleReset} className="w-full py-4 bg-slate-700 hover:bg-slate-600 rounded-xl text-white font-bold">
-              重新開始
+              重置場景
             </button>
           </div>
         );
@@ -149,42 +148,57 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden max-h-[calc(100vh-160px)]">
-      {/* 四選一控制列 */}
-      <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.05] p-3 px-5 rounded-xl mb-4 shrink-0">
+      {/* 增強型控制列 */}
+      <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.05] p-3 px-5 rounded-xl mb-4 shrink-0 shadow-inner">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-4 border-r border-white/10 pr-6">
-            <label className="flex items-center gap-2 text-xs text-rose-400/60 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] text-rose-400/60 cursor-pointer hover:text-rose-400 transition-colors">
               <input type="checkbox" checked={showTradShort} onChange={e=>setShowTradShort(e.target.checked)} className="accent-rose-500" />
-              傳統反向 (-1x)
+              傳統反向
             </label>
-            <label className="flex items-center gap-2 text-xs text-purple-400 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] text-purple-400 cursor-pointer hover:text-purple-300 transition-colors">
               <input type="checkbox" checked={showInnShort} onChange={e=>setShowInnShort(e.target.checked)} className="accent-purple-500" />
-              創新反向 (-1x)
+              創新反向
             </label>
           </div>
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-xs text-red-500 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] text-red-500 cursor-pointer hover:text-red-400 transition-colors">
               <input type="checkbox" checked={showTradLong} onChange={e=>setShowTradLong(e.target.checked)} className="accent-red-500" />
-              傳統正向 (+1x)
+              傳統正向
             </label>
-            <label className="flex items-center gap-2 text-xs text-emerald-400 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] text-emerald-400 cursor-pointer hover:text-emerald-300 transition-colors">
               <input type="checkbox" checked={showInnLong} onChange={e=>setShowInnLong(e.target.checked)} className="accent-emerald-500" />
-              創新正向 (+1x)
+              創新正向
             </label>
           </div>
         </div>
-        <div className="text-[10px] text-slate-600 font-mono uppercase tracking-widest">
-           Day: {currentDay} / {params.tradingDays}
+
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsZoomed(!isZoomed)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+              isZoomed 
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+                : "bg-white/5 text-slate-400 hover:bg-white/10"
+            }`}
+          >
+            {isZoomed ? <ZoomOut size={14} /> : <ZoomIn size={14} />}
+            {isZoomed ? "取消放大" : "局部放大 (Smart Zoom)"}
+          </button>
+          <div className="h-4 w-[1px] bg-white/10" />
+          <div className="text-[10px] text-slate-500 font-mono">
+             DAY {currentDay}
+          </div>
         </div>
       </div>
 
       <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
         <div className="col-span-1">
-          <GlassCard className="h-full flex flex-col justify-center p-6 border-l-4 border-l-purple-500">
+          <GlassCard className="h-full flex flex-col justify-center p-6 border-l-4 border-l-indigo-500">
             {renderNarrative()}
             <div className="mt-8 pt-6 border-t border-white/5 shrink-0">
               {isPlaying && (
-                <button onClick={togglePause} className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] text-slate-400 uppercase tracking-widest">
+                <button onClick={togglePause} className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-[10px] text-slate-400 uppercase tracking-widest hover:text-white transition-colors">
                   {isPaused ? "RESUME" : "PAUSE"}
                 </button>
               )}
@@ -201,6 +215,7 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
               showTradLong={showTradLong}
               showInnShort={showInnShort}
               showInnLong={showInnLong}
+              isZoomed={isZoomed}
             />
           </GlassCard>
         </div>
