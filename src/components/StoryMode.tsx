@@ -76,6 +76,10 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
     setIsPaused(false);
   };
 
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+  };
+
   const slicedData = useMemo(() => {
     const slice: ExtendedDailyData[] = [];
     for (let i = 0; i <= currentDay; i++) {
