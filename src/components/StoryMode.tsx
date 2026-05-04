@@ -113,41 +113,45 @@ export function StoryMode({ data, params, shocks }: StoryModeProps) {
             </div>
 
             <div className="space-y-4">
-              {/* 反向對比數據 */}
-              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <div className="flex items-center gap-2 mb-2">
-                   <ShieldAlert size={14} className="text-purple-400" />
-                   <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider">反向策略 (-1x) 保費代價</span>
+              {/* 反向對比數據：只有在勾選反向相關線條時顯示 */}
+              {(showInnShort || showTradShort) && (
+                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 animate-in fade-in zoom-in duration-300">
+                  <div className="flex items-center gap-2 mb-2">
+                     <ShieldAlert size={14} className="text-purple-400" />
+                     <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider">反向策略 (-1x) 保費代價</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                     <div>
+                        <p className="text-lg font-mono font-bold text-white">{shortStats?.preSwanTradWinRatio.toFixed(1)}%</p>
+                        <p className="text-[9px] text-slate-500 uppercase">傳統贏過創新天數</p>
+                     </div>
+                     <div>
+                        <p className="text-lg font-mono font-bold text-white">-{shortStats?.preSwanTradOutperformanceAvg.toFixed(1)}%</p>
+                        <p className="text-[9px] text-slate-500 uppercase">平均保費成本</p>
+                     </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                   <div>
-                      <p className="text-lg font-mono font-bold text-white">{shortStats?.preSwanTradWinRatio.toFixed(1)}%</p>
-                      <p className="text-[9px] text-slate-500 uppercase">傳統贏過創新天數</p>
-                   </div>
-                   <div>
-                      <p className="text-lg font-mono font-bold text-white">-{shortStats?.preSwanTradOutperformanceAvg.toFixed(1)}%</p>
-                      <p className="text-[9px] text-slate-500 uppercase">平均保費成本</p>
-                   </div>
-                </div>
-              </div>
+              )}
 
-              {/* 正向對比數據 */}
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <div className="flex items-center gap-2 mb-2">
-                   <TrendingUp size={14} className="text-emerald-400" />
-                   <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">正向策略 (+1x) 補血收益</span>
+              {/* 正向對比數據：只有在勾選正向相關線條時顯示 */}
+              {(showInnLong || showTradLong) && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 animate-in fade-in zoom-in duration-300">
+                  <div className="flex items-center gap-2 mb-2">
+                     <TrendingUp size={14} className="text-emerald-400" />
+                     <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">正向策略 (+1x) 補血收益</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                     <div>
+                        <p className="text-lg font-mono font-bold text-white">{longStats?.preSwanInnWinRatio.toFixed(1)}%</p>
+                        <p className="text-[9px] text-slate-500 uppercase">創新贏過傳統天數</p>
+                     </div>
+                     <div>
+                        <p className="text-lg font-mono font-bold text-white">+{longStats?.preSwanInnOutperformanceAvg.toFixed(1)}%</p>
+                        <p className="text-[9px] text-slate-500 uppercase">平均領先幅度</p>
+                     </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                   <div>
-                      <p className="text-lg font-mono font-bold text-white">{longStats?.preSwanInnWinRatio.toFixed(1)}%</p>
-                      <p className="text-[9px] text-slate-500 uppercase">創新贏過傳統天數</p>
-                   </div>
-                   <div>
-                      <p className="text-lg font-mono font-bold text-white">+{longStats?.preSwanInnOutperformanceAvg.toFixed(1)}%</p>
-                      <p className="text-[9px] text-slate-500 uppercase">平均領先幅度</p>
-                   </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {!isPlaying && currentDay === targetDay && (
