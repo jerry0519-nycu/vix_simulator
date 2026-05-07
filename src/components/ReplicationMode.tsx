@@ -239,13 +239,13 @@ export function ReplicationMode() {
             {activeTab === 'short' ? (
               <>
                 <p className="text-slate-400">傳統公式: 傳統淨值 = 初始淨值 × [ 1 + (VIX變動率 × -1) ]</p>
-                <p className="text-purple-300/80">選擇權公式: 買入買權淨損益 = Max[ 0, (市場VIX - 履約價) / 初始VIX ] - 保費支出</p>
+                <p className="text-purple-300/80">選擇權公式: 買入買權淨損益 = Max[ 0, (市場VIX - 履約價) / 初始VIX ] × 100% - 保費支出(%)</p>
                 <p className="text-purple-400 font-bold">創新公式: 創新淨值 = 傳統淨值 + 買入買權淨損益</p>
               </>
             ) : (
               <>
                 <p className="text-slate-400">傳統公式: 傳統淨值 = 初始淨值 × [ 1 + (VIX變動率 × +1) ] - 30天正價差耗損</p>
-                <p className="text-emerald-300/80">選擇權公式: 賣出買權淨損益 = -Max[ 0, (市場VIX - 履約價) / 初始VIX ] + 權利金收入</p>
+                <p className="text-emerald-300/80">選擇權公式: 賣出買權淨損益 = -Max[ 0, (市場VIX - 履約價) / 初始VIX ] × 100% + 權利金收入(%)</p>
                 <p className="text-emerald-400 font-bold">創新公式: 創新淨值 = 傳統淨值 + 賣出買權淨損益</p>
               </>
             )}
