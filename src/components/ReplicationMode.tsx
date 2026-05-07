@@ -100,7 +100,7 @@ export function ReplicationMode() {
   const isLongAssembled = longShowInn;
 
   return (
-    <div className="flex flex-col h-full space-y-6 overflow-hidden max-h-[calc(100vh-160px)]">
+    <div className="flex flex-col h-full space-y-6 overflow-y-auto overflow-x-hidden custom-scrollbar pb-8 pr-2">
       
       {/* 頂部切換 Tabs */}
       <div className="flex space-x-4 shrink-0">
