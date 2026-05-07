@@ -34,23 +34,24 @@ export function ReplicationMode() {
   const [longShowOpt, setLongShowOpt] = useState(false);
   const [longShowInn, setLongShowInn] = useState(false);
 
-  // 計算反向數據 (-1x + Buy OTM Call)
+  // 計算反向數據 (-1x + Buy OTM Call) - 專注於黑天鵝防禦 (VIX 飆升至 85)
   const shortData = useMemo(() => {
     const data = [];
     const leverage = -1.0;
     const strike = baseVix * 1.5; // 履約價設定為 VIX 上漲 50%
     const gammaMultiplier = 1.5;  // 尾部爆發力乘數
 
-    for (let x = 5; x <= 65; x += 1) {
+    // 反向模組的 X 軸展示極端暴漲情境 (10 到 85)
+    for (let x = 10; x <= 85; x += 1) {
       const vixReturn = (x - baseVix) / baseVix;
       
       // 1. 傳統 ETN 損益
-      const trad = vixReturn * leverage * 100;
+      let trad = vixReturn * leverage * 100;
+      if (trad <= -100) trad = -100; // 跌幅 100% 歸零
       
       // 2. 選擇權元件 (單純的 payoff，扣掉成本)
-      // 只有在 VIX 超過履約價時，才會產生正向報酬 (Gamma爆發)
       const optPayoff = Math.max(0, (x - strike) / baseVix) * 100 * gammaMultiplier;
-      const opt = optPayoff - premium; // 買權利金是支出
+      const opt = optPayoff - premium; 
       
       // 3. 創新商品
       const inn = trad + opt;
@@ -65,22 +66,25 @@ export function ReplicationMode() {
     return data;
   }, [baseVix, premium]);
 
-  // 計算正向數據 (+1x + Sell OTM Call)
+  // 計算正向數據 (+1x + Sell OTM Call) - 專注於平靜期對抗耗損 (VIX 10~40)
   const longData = useMemo(() => {
     const data = [];
     const leverage = 1.0;
     const strike = baseVix * 1.35; // 履約價設定為 VIX 上漲 35%
+    const assumedHoldingDays = 30; // 假設持有 1 個月
+    const baseContangoDaily = 0.15; // 每日 0.15% 正價差耗損
+    const totalDecay = assumedHoldingDays * baseContangoDaily; // 總耗損約 4.5%
 
-    for (let x = 5; x <= 65; x += 1) {
+    // 正向模組的 X 軸展示平穩期情境 (10 到 40)
+    for (let x = 10; x <= 40; x += 1) {
       const vixReturn = (x - baseVix) / baseVix;
       
-      // 1. 傳統 ETN 損益
-      const trad = vixReturn * leverage * 100;
+      // 1. 傳統 ETN 損益 (加入時間耗損！)
+      const trad = (vixReturn * leverage * 100) - totalDecay;
       
       // 2. 選擇權元件 (賣出買權)
-      // VIX 超過履約價時會產生負向報酬，但平時有權利金收入
       const optPayoff = -Math.max(0, (x - strike) / baseVix) * 100;
-      const opt = optPayoff + premium; // 賣權利金是收入
+      const opt = optPayoff + premium; 
       
       // 3. 創新商品
       const inn = trad + opt;
@@ -231,10 +235,10 @@ export function ReplicationMode() {
 
           </div>
 
-          <div className="text-xs font-mono text-slate-500 bg-black/40 px-4 py-2 rounded-lg border border-white/5">
+          <div className="text-xs font-mono text-slate-500 bg-black/40 px-4 py-2 rounded-lg border border-white/5 text-center">
             {activeTab === 'short' 
               ? "Formula: 創新淨值 = 傳統反向 (-1x) + 買入尾部買權 (Gamma > 0) - 保費支出"
-              : "Formula: 創新淨值 = 傳統正向 (+1x) + 賣出掩護買權 (Capped Upside) + 權利金收入"
+              : "Formula: 創新淨值 = [傳統正向 (+1x) - 30天正價差耗損] + 賣出買權 (Capped Upside) + 權利金收入"
             }
           </div>
         </div>
@@ -250,7 +254,8 @@ export function ReplicationMode() {
               <XAxis 
                 dataKey="vix" 
                 type="number" 
-                domain={[5, 65]} 
+                domain={activeTab === 'short' ? [10, 85] : [10, 40]} 
+                ticks={activeTab === 'short' ? [10, 25, 40, 55, 70, 85] : [10, 15, 20, 25, 30, 35, 40]}
                 stroke="#64748b" 
                 label={{ value: '市場 VIX 指數', position: 'insideBottom', offset: -10, fill: '#64748b' }}
               />

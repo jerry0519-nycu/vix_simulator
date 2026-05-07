@@ -72,15 +72,24 @@ export function useSimulation(params: SimulationParams, shocks: number[]) {
       const safeVix = Math.max(currentVix, 0.1); 
 
       if (day === params.blackSwanDay) {
-        vixReturn = params.blackSwanSpike / 100;
+        // 黑天鵝爆發：直接飆升至絕對目標 VIX
+        vixReturn = (params.blackSwanSpike - currentVix) / currentVix;
       } else {
         const z0 = activeShocks[day % activeShocks.length];
-        const kappa = 0.05;
+        let kappa = 0.05;
+        // 當偏離 12~30 區間時加強均值回歸力度，模擬平時的穩定性
+        if (safeVix > 30 || safeVix < 12) kappa = 0.15;
+        
         const longTermMean = Number(params.initialVix);
         const drift = kappa * (longTermMean - safeVix) / safeVix;
         vixReturn = drift + z0 * (params.dailyVol / 100);
+
+        // 軟限制平穩期的 VIX 範圍 (10 ~ 40)，避免單日震盪過大失去平靜期特徵
+        const nextVix = currentVix * (1 + vixReturn);
+        if (nextVix > 40) vixReturn = (40 - currentVix) / currentVix;
+        if (nextVix < 9) vixReturn = (9 - currentVix) / currentVix;
       }
-      currentVix = Math.max(currentVix * (1 + vixReturn), 5);
+      currentVix = Math.max(currentVix * (1 + vixReturn), 9);
 
       const marketContango = calcMarketContango(currentVix, params.baseContango);
       const actualRollYield = marketContango * (-Math.sign(params.leverage));

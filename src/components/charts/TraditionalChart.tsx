@@ -25,7 +25,7 @@ export function TraditionalChart({ data }: { data: DailyData[] }) {
           <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
           <XAxis dataKey="day" stroke="#64748b" tick={{ fill: '#64748b' }} />
           <YAxis yAxisId="left" stroke="#64748b" tick={{ fill: '#64748b' }} domain={[0, 'auto']} />
-          <YAxis yAxisId="right" orientation="right" stroke="#64748b" tick={{ fill: '#64748b' }} domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} allowDataOverflow={true} />
+          <YAxis yAxisId="right" orientation="right" stroke="#64748b" tick={{ fill: '#64748b' }} domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} allowDataOverflow={true} />
           <Tooltip 
             formatter={(value: number) => value.toFixed(2)}
             contentStyle={{ backgroundColor: 'rgba(10, 5, 20, 0.9)', borderColor: '#4c1d95', color: '#fff', borderRadius: '8px' }}

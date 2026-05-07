@@ -28,7 +28,7 @@ export function Sidebar({ params, setParams, onRegenerate }: SidebarProps) {
     { label: "基礎正價差水準", key: "baseContango", min: 0.05, max: 0.30, step: 0.01, unit: "%/天" },
     { label: "槓桿倍數", key: "leverage", min: -2.0, max: 2.0, step: 0.5, unit: "x" },
     { label: "黑天鵝爆發天數", key: "blackSwanDay", min: 1, max: params.tradingDays, step: 1, unit: "天" },
-    { label: "黑天鵝暴漲幅度", key: "blackSwanSpike", min: 50, max: 150, step: 1, unit: "%" },
+    { label: "黑天鵝目標 VIX (Panic)", key: "blackSwanSpike", min: 50, max: 85, step: 1, unit: "" },
   ];
 
   // 根據槓桿方向動態切換的滑桿

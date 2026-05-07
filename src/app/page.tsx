@@ -16,7 +16,7 @@ export default function Home() {
     baseContango: 0.15,
     leverage: -1.0,
     blackSwanDay: 200,
-    blackSwanSpike: 100,
+    blackSwanSpike: 75,
     tailRiskPremium: 10,
     coveredCallYield: 10,
   });

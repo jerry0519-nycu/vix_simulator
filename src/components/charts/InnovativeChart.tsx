@@ -24,7 +24,7 @@ export function InnovativeChart({ data }: { data: DailyData[] }) {
           <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
           <XAxis dataKey="day" stroke="#475569" fontSize={12} />
           <YAxis yAxisId="left" stroke="#475569" fontSize={12} domain={[0, 'auto']} />
-          <YAxis yAxisId="right" orientation="right" stroke="#475569" fontSize={12} domain={[0, 80]} hide />
+          <YAxis yAxisId="right" orientation="right" stroke="#475569" fontSize={12} domain={[0, 100]} hide />
           <Tooltip 
             formatter={(value: number) => value.toFixed(2)}
             contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}

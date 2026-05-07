@@ -75,7 +75,7 @@ export function StoryChart({
           <LineChart data={data} syncId="story-sync" margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.02)" />
             <XAxis dataKey="day" type="number" domain={[0, maxDays]} stroke="#475569" tick={{ fill: '#475569', fontSize: 11 }} />
-            <YAxis yAxisId="left" stroke="#38bdf8" tick={{ fill: '#38bdf8', fontSize: 11 }} domain={[0, 60]} ticks={[0, 20, 40, 60]} width={yAxisWidth} />
+            <YAxis yAxisId="left" stroke="#38bdf8" tick={{ fill: '#38bdf8', fontSize: 11 }} domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} width={yAxisWidth} />
             <Line yAxisId="left" type="monotone" dataKey="vix" name="VIX 指數" stroke="#38bdf8" strokeWidth={3} dot={false} opacity={0.5} isAnimationActive={false} />
             <Tooltip 
               formatter={(value: number) => value.toFixed(2)}
