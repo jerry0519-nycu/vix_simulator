@@ -240,7 +240,7 @@ export function ReplicationMode() {
         </div>
 
         {/* 核心圖表區 */}
-        <div className="flex-1 min-h-0 relative">
+        <div className="flex-1 min-h-[400px] w-full relative mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={activeTab === 'short' ? shortData : longData} 
