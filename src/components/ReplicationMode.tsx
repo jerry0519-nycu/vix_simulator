@@ -235,11 +235,18 @@ export function ReplicationMode() {
 
           </div>
 
-          <div className="text-xs font-mono text-slate-500 bg-black/40 px-4 py-2 rounded-lg border border-white/5 text-center">
-            {activeTab === 'short' 
-              ? "Formula: 創新淨值 = 傳統反向 (-1x) + 買入尾部買權 (Gamma > 0) - 保費支出"
-              : "Formula: 創新淨值 = [傳統正向 (+1x) - 30天正價差耗損] + 賣出買權 (Capped Upside) + 權利金收入"
-            }
+          <div className="flex flex-col gap-1 text-xs font-mono text-slate-500 bg-black/40 px-4 py-3 rounded-lg border border-white/5 text-center">
+            {activeTab === 'short' ? (
+              <>
+                <p className="text-slate-400">傳統公式: 傳統淨值 = 初始淨值 × [ 1 + (VIX變動率 × -1) ]</p>
+                <p className="text-purple-400 font-bold">創新公式: 創新淨值 = 傳統淨值 + 買入尾部買權 (Gamma &gt; 0) - 保費支出</p>
+              </>
+            ) : (
+              <>
+                <p className="text-slate-400">傳統公式: 傳統淨值 = 初始淨值 × [ 1 + (VIX變動率 × +1) ] - 30天正價差耗損</p>
+                <p className="text-emerald-400 font-bold">創新公式: 創新淨值 = 傳統淨值 + 賣出掩護買權 (Capped Upside) + 權利金收入</p>
+              </>
+            )}
           </div>
         </div>
 
