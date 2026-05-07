@@ -100,7 +100,7 @@ export function ReplicationMode() {
   const isLongAssembled = longShowInn;
 
   return (
-    <div className="flex flex-col h-full space-y-6 overflow-y-auto overflow-x-hidden custom-scrollbar pb-8 pr-2">
+    <div className="flex flex-col space-y-6 pb-8">
       
       {/* 頂部切換 Tabs */}
       <div className="flex space-x-4 shrink-0">
@@ -240,7 +240,7 @@ export function ReplicationMode() {
         </div>
 
         {/* 核心圖表區 */}
-        <div className="flex-1 min-h-[400px] w-full relative mt-4">
+        <div className="w-full h-[450px] relative mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={activeTab === 'short' ? shortData : longData} 
