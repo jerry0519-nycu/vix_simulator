@@ -80,6 +80,21 @@ export function Dashboard({ data, stats, params, activeTab, setActiveTab, shocks
               <p className="text-slate-400 text-sm font-light">黑天鵝發生時缺乏保護。若單日虧損達 100%，將觸發加速清算條款淨值歸零。</p>
             </GlassCard>
           </div>
+
+          {/* 放大的核心公式區塊 */}
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-6 text-center shadow-lg relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-slate-500 to-transparent opacity-50"></div>
+             <p className="text-2xl font-mono font-bold tracking-wider mb-2">
+                <span className="text-slate-300">Trade Return = </span>
+                <span className="text-teal-400">(VIX Return × Leverage)</span>
+                <span className="text-slate-300"> + </span>
+                <span className="text-rose-400">Roll Yield</span>
+             </p>
+             <p className="text-sm text-slate-400">
+                註：當做多 (Leverage &gt; 0) 且市場平靜時，Roll Yield 為負值，這就是造成「慢性失血」的元凶。
+             </p>
+          </div>
+
           <GlassCard>
             <h4 className="text-lg font-semibold mb-4 text-slate-200 font-mono tracking-tighter">TRADITIONAL BENCHMARK PERFORMANCE</h4>
             <TraditionalChart data={data} />

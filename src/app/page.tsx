@@ -12,8 +12,8 @@ export default function Home() {
   const [params, setParams] = useState<SimulationParams>({
     tradingDays: 252,
     initialVix: 15,
-    dailyVol: 4.0,
-    baseContango: 0.15,
+    dailyVol: 2.5,
+    baseContango: 0.25,
     leverage: -1.0,
     blackSwanDay: 200,
     blackSwanSpike: 75,
